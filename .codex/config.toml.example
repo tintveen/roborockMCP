@@ -1,0 +1,72 @@
+[mcp_servers.roborock]
+command = "uv"
+args = [
+  "run",
+  "--project",
+  "/Users/tintveen/Documents/GitHub/roborockMCP",
+  "roborock-mcp",
+  "serve",
+  "--profile",
+  "full-s8",
+]
+required = true
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+default_tools_approval_mode = "writes"
+enabled_tools = [
+  "get_devices",
+  "get_status",
+  "get_map",
+  "get_cleaning_settings",
+  "get_dock_status",
+  "get_automations",
+  "get_cleaning_history",
+  "get_maintenance",
+  "get_obstacles",
+  "get_device_settings",
+  "start_cleaning",
+  "control_cleaning",
+  "run_routine",
+  "set_cleaning_settings",
+  "dock_action",
+  "set_dock_settings",
+  "navigate",
+  "remote_control",
+  "manage_map",
+  "edit_rooms",
+  "edit_map_boundaries",
+  "manage_schedule",
+  "reset_consumable",
+  "set_device_settings",
+  "telepresence",
+]
+
+[mcp_servers.roborock.tools.get_map]
+approval_mode = "prompt"
+
+[mcp_servers.roborock.tools.get_obstacles]
+approval_mode = "prompt"
+
+[mcp_servers.roborock.tools.navigate]
+approval_mode = "prompt"
+
+[mcp_servers.roborock.tools.remote_control]
+approval_mode = "prompt"
+
+[mcp_servers.roborock.tools.manage_map]
+approval_mode = "prompt"
+
+[mcp_servers.roborock.tools.edit_rooms]
+approval_mode = "prompt"
+
+[mcp_servers.roborock.tools.edit_map_boundaries]
+approval_mode = "prompt"
+
+[mcp_servers.roborock.tools.manage_schedule]
+approval_mode = "prompt"
+
+[mcp_servers.roborock.tools.reset_consumable]
+approval_mode = "prompt"
+
+[mcp_servers.roborock.tools.telepresence]
+approval_mode = "prompt"

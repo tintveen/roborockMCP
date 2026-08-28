@@ -1,0 +1,22 @@
+.DS_Store
+.coverage
+.cache/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+__pycache__/
+*.egg-info/
+*.py[cod]
+build/
+dist/
+htmlcov/
+
+# Never commit device/account material or protocol captures.
+.secrets/
+captures/
+live-reports/private/
+*.pcap
+*.pcapng
+*.har
+go2rtc.yaml

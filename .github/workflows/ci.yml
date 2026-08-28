@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv python install 3.13
+      - run: uv sync --locked --all-groups
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy
+      - run: uv run pytest
+      - run: uv build
+      - name: Reject sensitive capture artifacts
+        run: |
+          if find . -type f \( -name '*.pcap' -o -name '*.pcapng' -o -name '*.har' -o -name 'go2rtc.yaml' \) | grep -q .; then
+            echo "Sensitive capture/config artifact found"
+            exit 1
+          fi
+
+  python-compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.11', '3.12', '3.13', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv python install ${{ matrix.python }}
+      - run: uv sync --locked --all-groups --python ${{ matrix.python }}
+      - run: uv run --python ${{ matrix.python }} pytest --no-cov tests/test_models.py tests/test_security.py
+
+  sidecar-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify pinned patch applies
+        run: |
+          git clone --quiet --depth 1 --branch v1.9.14 https://github.com/AlexxIT/go2rtc.git /tmp/go2rtc
+          git -C /tmp/go2rtc apply --check "$GITHUB_WORKSPACE/third_party/go2rtc/patches/0001-roborock-region-client-id.patch"
