@@ -12,13 +12,13 @@ from typing import Annotated, Any, Literal
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.exceptions import ToolError
-from mcp.types import ToolAnnotations
+from mcp.types import CallToolResult, ImageContent, TextContent, ToolAnnotations
 from pydantic import Field
 
 from roborock_mcp.auth import CredentialStore
 from roborock_mcp.config import ProfileStore
-from roborock_mcp.errors import DomainError
-from roborock_mcp.gateway import Gateway, RoborockGateway
+from roborock_mcp.errors import DomainError, ErrorCode
+from roborock_mcp.gateway import WRITE_TOOLS, Gateway, RoborockGateway
 from roborock_mcp.models import (
     BoundaryGeometry,
     CleaningSettings,
@@ -45,6 +45,7 @@ SERVER_INSTRUCTIONS = (
 @dataclass(slots=True)
 class AppContext:
     gateway: Gateway
+    stationary_repair: bool = False
 
 
 def _annotations(*, read_only: bool, destructive: bool = False, idempotent: bool = False) -> ToolAnnotations:
@@ -58,7 +59,10 @@ def _annotations(*, read_only: bool, destructive: bool = False, idempotent: bool
 
 async def _invoke(ctx: Context[AppContext], tool: str, arguments: dict[str, Any]) -> OperationResult:
     try:
-        return await ctx.request_context.lifespan_context.gateway.invoke(tool, arguments)
+        context = ctx.request_context.lifespan_context
+        if context.stationary_repair and tool in WRITE_TOOLS and tool != "edit_rooms":
+            raise DomainError(ErrorCode.CAPABILITY_DISABLED, "Stationary repair blocks this write.")
+        return await context.gateway.invoke(tool, arguments)
     except DomainError as exc:
         payload = {"ok": False, "error": exc.as_dict()}
         raise ToolError(json.dumps(payload, separators=(",", ":"))) from exc
@@ -68,7 +72,9 @@ def _dump(value: Any) -> Any:
     return value.model_dump(mode="json", exclude_none=True) if hasattr(value, "model_dump") else value
 
 
-def build_server(*, profile_name: str = "full-s8", gateway: Gateway | None = None) -> MCPServer[AppContext]:
+def build_server(
+    *, profile_name: str = "full-s8", gateway: Gateway | None = None, stationary_repair: bool = False
+) -> MCPServer[AppContext]:
     owns_gateway = gateway is None
 
     @asynccontextmanager
@@ -82,9 +88,11 @@ def build_server(*, profile_name: str = "full-s8", gateway: Gateway | None = Non
                     f"Profile '{profile_name}' does not exist. Run "
                     f"'roborock-mcp auth login --profile {profile_name}'."
                 )
+            if stationary_repair:
+                profile = profile.model_copy(update={"stationary_repair": True})
             selected = await RoborockGateway.connect(profile, CredentialStore())
         try:
-            yield AppContext(selected)
+            yield AppContext(selected, stationary_repair=stationary_repair)
         finally:
             if owns_gateway:
                 await selected.close()
@@ -114,10 +122,18 @@ def build_server(*, profile_name: str = "full-s8", gateway: Gateway | None = Non
         ctx: Context[AppContext],
         device: str | None = None,
         map: str | None = None,
-        format: Literal["summary", "geometry", "image", "all"] = "summary",
-    ) -> OperationResult:
+        format: Literal["summary", "geometry", "image", "all", "repair_preview"] = "summary",
+    ) -> Annotated[CallToolResult, OperationResult]:
         """Read sensitive home layout data. Codex must ask before image or geometry access."""
-        return await _invoke(ctx, "get_map", {"device": device, "map": map, "format": format})
+        result = await _invoke(ctx, "get_map", {"device": device, "map": map, "format": format})
+        payload = result.model_dump(mode="json")
+        rendered = payload["result"].get("image")
+        content: list[Any] = []
+        if rendered and rendered.get("base64"):
+            content.append(ImageContent(type="image", data=rendered["base64"], mime_type="image/png"))
+            payload["result"]["image"] = {"mime_type": "image/png", "content_index": 0}
+        content.append(TextContent(type="text", text=json.dumps(payload)))
+        return CallToolResult(content=content, structured_content=payload)
 
     @mcp.tool(annotations=_annotations(read_only=True), structured_output=True)
     async def get_cleaning_settings(
@@ -355,12 +371,13 @@ def build_server(*, profile_name: str = "full-s8", gateway: Gateway | None = Non
         action: Literal["rename", "split", "merge"],
         rooms: Annotated[list[str], Field(min_length=1, max_length=2)],
         map_revision: str,
-        device: str | None = None,
-        map: str | None = None,
+        device: str,
+        map: str,
         name: Annotated[str | None, Field(max_length=40)] = None,
         split_line: SplitLine | None = None,
+        dry_run: bool = True,
     ) -> OperationResult:
-        """Rename, split, or merge explicit rooms on a current map revision."""
+        """Preview by default; explicitly apply one reviewed split/merge. Rename needs the official app."""
         if action in {"rename", "split"} and len(rooms) != 1:
             raise ToolError(f"{action} requires exactly one room")
         if action == "merge" and len(rooms) != 2:
@@ -380,6 +397,7 @@ def build_server(*, profile_name: str = "full-s8", gateway: Gateway | None = Non
                 "rooms": rooms,
                 "name": name,
                 "split_line": _dump(split_line),
+                "dry_run": dry_run,
             },
         )
 
@@ -485,5 +503,5 @@ def build_server(*, profile_name: str = "full-s8", gateway: Gateway | None = Non
     return mcp
 
 
-def run_server(profile_name: str = "full-s8") -> None:
-    build_server(profile_name=profile_name).run("stdio")
+def run_server(profile_name: str = "full-s8", *, stationary_repair: bool = False) -> None:
+    build_server(profile_name=profile_name, stationary_repair=stationary_repair).run("stdio")

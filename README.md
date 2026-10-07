@@ -17,6 +17,13 @@ Private, Codex-first Model Context Protocol server for a Roborock S8 MaxV Ultra.
 - A pinned go2rtc v1.9.14 sidecar build with a narrow region/client-ID patch.
 - Stable errors, no automatic write retry, and read-back guidance for uncertain outcomes.
 - Fake-backed unit and in-memory MCP tests that never contact Roborock.
+- Stationary map repair: native geometry/image reads, conservative room-boundary
+  previews, explicit device/map revisions, and single-dispatch split/merge edits.
+
+See [the stationary repair workflow](docs/MAP_REPAIR.md) for supervision,
+recovery limitations, and the `--stationary-repair` server mode. Room edits now
+preview by default. Unverified room-renaming and boundary-write payloads are
+disabled; use the official app for those operations.
 
 There is deliberately no arbitrary `raw_command` tool. Map deletion, backup,
 and recovery are not part of 0.1.0. Consumable reset is exposed but is explicitly

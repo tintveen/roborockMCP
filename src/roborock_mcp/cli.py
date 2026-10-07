@@ -48,12 +48,17 @@ def serve(
     fake: Annotated[
         bool, typer.Option(help="Use deterministic fake state; never contacts Roborock.")
     ] = False,
+    stationary_repair: Annotated[
+        bool, typer.Option(help="Permit only stationary room edits; block all other write actions.")
+    ] = False,
 ) -> None:
     """Run the MCP server over protocol-clean stdio."""
     if fake:
-        build_server(profile_name=profile, gateway=FakeGateway()).run("stdio")
+        build_server(profile_name=profile, gateway=FakeGateway(stationary_repair=stationary_repair)).run(
+            "stdio"
+        )
     else:
-        run_server(profile)
+        run_server(profile, stationary_repair=stationary_repair)
 
 
 @auth_app.command("login")

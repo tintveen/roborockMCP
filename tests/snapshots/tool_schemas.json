@@ -1,0 +1,4630 @@
+[
+  {
+    "name": "get_devices",
+    "description": "List devices and their enabled, source-backed, and live-verified capabilities.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        }
+      },
+      "title": "get_devicesArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "get_status",
+    "description": "Read fresh battery, robot task, error, map, dock, progress, and position state.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        }
+      },
+      "title": "get_statusArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "get_map",
+    "description": "Read sensitive home layout data. Codex must ask before image or geometry access.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        },
+        "map": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Map"
+        },
+        "format": {
+          "default": "summary",
+          "enum": [
+            "summary",
+            "geometry",
+            "image",
+            "all",
+            "repair_preview"
+          ],
+          "title": "Format",
+          "type": "string"
+        }
+      },
+      "title": "get_mapArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "get_cleaning_settings",
+    "description": "Read global or room cleaning modes and the valid choices reported by the device.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        },
+        "rooms": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rooms"
+        }
+      },
+      "title": "get_cleaning_settingsArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "get_dock_status",
+    "description": "Read dock operation, errors, supported actions, and current dock settings.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        }
+      },
+      "title": "get_dock_statusArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "get_automations",
+    "description": "List native Roborock schedules and routines with opaque identifiers.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        }
+      },
+      "title": "get_automationsArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "get_cleaning_history",
+    "description": "Read aggregate cleaning statistics and a bounded page of cleaning history.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        },
+        "since": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Since"
+        },
+        "until": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Until"
+        },
+        "limit": {
+          "default": 20,
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cursor"
+        }
+      },
+      "title": "get_cleaning_historyArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "get_maintenance",
+    "description": "Read consumable work times, remaining estimates, and resettable opaque keys.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        }
+      },
+      "title": "get_maintenanceArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "get_obstacles",
+    "description": "Read obstacle metadata and optionally sensitive onboard photos. Codex must ask first.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        },
+        "map": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Map"
+        },
+        "include_photos": {
+          "default": false,
+          "title": "Include Photos",
+          "type": "boolean"
+        },
+        "obstacle_keys": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 10,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Obstacle Keys"
+        }
+      },
+      "title": "get_obstaclesArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "get_device_settings",
+    "description": "Read DND, LED, child lock, sound, camera, and supported AI settings.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        }
+      },
+      "title": "get_device_settingsArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "start_cleaning",
+    "description": "Start one bounded full, room, zone, or spot cleaning task after Codex approval.",
+    "inputSchema": {
+      "type": "object",
+      "$defs": {
+        "CleaningSettings": {
+          "additionalProperties": false,
+          "properties": {
+            "vacuum_power": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Vacuum Power"
+            },
+            "mop_intensity": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Mop Intensity"
+            },
+            "route": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Route"
+            },
+            "passes": {
+              "anyOf": [
+                {
+                  "maximum": 3,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Passes"
+            },
+            "carpet_behavior": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Carpet Behavior"
+            },
+            "cleaning_sequence": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 30,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Cleaning Sequence"
+            }
+          },
+          "title": "CleaningSettings",
+          "type": "object"
+        },
+        "Point": {
+          "additionalProperties": false,
+          "properties": {
+            "x_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "X Mm",
+              "type": "integer"
+            },
+            "y_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Y Mm",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "x_mm",
+            "y_mm"
+          ],
+          "title": "Point",
+          "type": "object"
+        },
+        "Zone": {
+          "additionalProperties": false,
+          "properties": {
+            "min_x_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Min X Mm",
+              "type": "integer"
+            },
+            "min_y_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Min Y Mm",
+              "type": "integer"
+            },
+            "max_x_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Max X Mm",
+              "type": "integer"
+            },
+            "max_y_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Max Y Mm",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "min_x_mm",
+            "min_y_mm",
+            "max_x_mm",
+            "max_y_mm"
+          ],
+          "title": "Zone",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "mode": {
+          "enum": [
+            "all",
+            "rooms",
+            "zones",
+            "spot"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        },
+        "map": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Map"
+        },
+        "rooms": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rooms"
+        },
+        "zones": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Zone"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Zones"
+        },
+        "point": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Point"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "passes": {
+          "default": 1,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Passes",
+          "type": "integer"
+        },
+        "settings": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CleaningSettings"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "start_cleaningArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "control_cleaning",
+    "description": "Pause, resume, stop, or dock the current cleaning task.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "enum": [
+            "pause",
+            "resume",
+            "stop",
+            "return_to_dock"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "control_cleaningArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "run_routine",
+    "description": "Execute exactly one routine selected from get_automations.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "routine": {
+          "title": "Routine",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        }
+      },
+      "required": [
+        "routine"
+      ],
+      "title": "run_routineArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "set_cleaning_settings",
+    "description": "Set supported cleaning modes globally or for explicit rooms, then read back state.",
+    "inputSchema": {
+      "type": "object",
+      "$defs": {
+        "CleaningSettings": {
+          "additionalProperties": false,
+          "properties": {
+            "vacuum_power": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Vacuum Power"
+            },
+            "mop_intensity": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Mop Intensity"
+            },
+            "route": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Route"
+            },
+            "passes": {
+              "anyOf": [
+                {
+                  "maximum": 3,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Passes"
+            },
+            "carpet_behavior": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Carpet Behavior"
+            },
+            "cleaning_sequence": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 30,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Cleaning Sequence"
+            }
+          },
+          "title": "CleaningSettings",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "scope": {
+          "enum": [
+            "global",
+            "rooms"
+          ],
+          "title": "Scope",
+          "type": "string"
+        },
+        "settings": {
+          "$ref": "#/$defs/CleaningSettings"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        },
+        "rooms": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rooms"
+        }
+      },
+      "required": [
+        "scope",
+        "settings"
+      ],
+      "title": "set_cleaning_settingsArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "dock_action",
+    "description": "Run one capability-gated physical dock action.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "enum": [
+            "empty_dustbin",
+            "stop_empty",
+            "wash_mop",
+            "stop_wash",
+            "dry_mop",
+            "stop_dry",
+            "wash_then_charge",
+            "empty_rinse_tank"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "dock_actionArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "set_dock_settings",
+    "description": "Set supported dock options and reject values not advertised by the device.",
+    "inputSchema": {
+      "type": "object",
+      "$defs": {
+        "DockSettings": {
+          "additionalProperties": false,
+          "properties": {
+            "auto_empty": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Auto Empty"
+            },
+            "dust_collection_mode": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Dust Collection Mode"
+            },
+            "mop_wash_mode": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Mop Wash Mode"
+            },
+            "mop_wash_interval_min": {
+              "anyOf": [
+                {
+                  "maximum": 50,
+                  "minimum": 10,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Mop Wash Interval Min"
+            },
+            "water_temperature": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Water Temperature"
+            },
+            "drying_duration_hours": {
+              "anyOf": [
+                {
+                  "maximum": 4,
+                  "minimum": 2,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Drying Duration Hours"
+            },
+            "detergent_auto_dose": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Detergent Auto Dose"
+            }
+          },
+          "title": "DockSettings",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "settings": {
+          "$ref": "#/$defs/DockSettings"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        }
+      },
+      "required": [
+        "settings"
+      ],
+      "title": "set_dock_settingsArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "navigate",
+    "description": "Navigate to one fresh-map target or control a supported patrol mode.",
+    "inputSchema": {
+      "type": "object",
+      "$defs": {
+        "Point": {
+          "additionalProperties": false,
+          "properties": {
+            "x_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "X Mm",
+              "type": "integer"
+            },
+            "y_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Y Mm",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "x_mm",
+            "y_mm"
+          ],
+          "title": "Point",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "action": {
+          "enum": [
+            "goto",
+            "stop",
+            "start_patrol",
+            "start_pet_patrol",
+            "resume_patrol",
+            "stop_patrol"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        },
+        "map": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Map"
+        },
+        "room": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Room"
+        },
+        "point": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Point"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "navigateArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "remote_control",
+    "description": "Perform a dead-man bounded RC sequence. Codex must ask and a human must supervise.",
+    "inputSchema": {
+      "type": "object",
+      "$defs": {
+        "Motion": {
+          "additionalProperties": false,
+          "properties": {
+            "direction": {
+              "enum": [
+                "forward",
+                "backward",
+                "turn_left",
+                "turn_right"
+              ],
+              "title": "Direction",
+              "type": "string"
+            },
+            "speed": {
+              "default": "slow",
+              "enum": [
+                "slow",
+                "normal"
+              ],
+              "title": "Speed",
+              "type": "string"
+            },
+            "duration_ms": {
+              "maximum": 1000,
+              "minimum": 100,
+              "title": "Duration Ms",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "direction",
+            "duration_ms"
+          ],
+          "title": "Motion",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "action": {
+          "enum": [
+            "move",
+            "stop"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        },
+        "moves": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Motion"
+              },
+              "maxItems": 8,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moves"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "remote_controlArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "manage_map",
+    "description": "Quick-map, resume, switch, or rename; deletion, backup, and recovery are not exposed.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "enum": [
+            "start_quick_mapping",
+            "resume_mapping",
+            "switch",
+            "rename"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        },
+        "map": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Map"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "expected_map_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Map Revision"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "manage_mapArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "edit_rooms",
+    "description": "Preview by default; explicitly apply one reviewed split/merge. Rename needs the official app.",
+    "inputSchema": {
+      "type": "object",
+      "$defs": {
+        "Point": {
+          "additionalProperties": false,
+          "properties": {
+            "x_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "X Mm",
+              "type": "integer"
+            },
+            "y_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Y Mm",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "x_mm",
+            "y_mm"
+          ],
+          "title": "Point",
+          "type": "object"
+        },
+        "SplitLine": {
+          "additionalProperties": false,
+          "properties": {
+            "start": {
+              "$ref": "#/$defs/Point"
+            },
+            "end": {
+              "$ref": "#/$defs/Point"
+            }
+          },
+          "required": [
+            "start",
+            "end"
+          ],
+          "title": "SplitLine",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "action": {
+          "enum": [
+            "rename",
+            "split",
+            "merge"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "rooms": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 1,
+          "title": "Rooms",
+          "type": "array"
+        },
+        "map_revision": {
+          "title": "Map Revision",
+          "type": "string"
+        },
+        "device": {
+          "title": "Device",
+          "type": "string"
+        },
+        "map": {
+          "title": "Map",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "split_line": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SplitLine"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "dry_run": {
+          "default": true,
+          "title": "Dry Run",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "action",
+        "rooms",
+        "map_revision",
+        "device",
+        "map"
+      ],
+      "title": "edit_roomsArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "edit_map_boundaries",
+    "description": "Add, replace, or remove one capability-gated map boundary on a current map revision.",
+    "inputSchema": {
+      "type": "object",
+      "$defs": {
+        "BoundaryGeometry": {
+          "additionalProperties": false,
+          "properties": {
+            "rectangle": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Zone"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "line": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/SplitLine"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "polygon": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/$defs/Point"
+                  },
+                  "maxItems": 32,
+                  "minItems": 3,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Polygon"
+            }
+          },
+          "title": "BoundaryGeometry",
+          "type": "object"
+        },
+        "Point": {
+          "additionalProperties": false,
+          "properties": {
+            "x_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "X Mm",
+              "type": "integer"
+            },
+            "y_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Y Mm",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "x_mm",
+            "y_mm"
+          ],
+          "title": "Point",
+          "type": "object"
+        },
+        "SplitLine": {
+          "additionalProperties": false,
+          "properties": {
+            "start": {
+              "$ref": "#/$defs/Point"
+            },
+            "end": {
+              "$ref": "#/$defs/Point"
+            }
+          },
+          "required": [
+            "start",
+            "end"
+          ],
+          "title": "SplitLine",
+          "type": "object"
+        },
+        "Zone": {
+          "additionalProperties": false,
+          "properties": {
+            "min_x_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Min X Mm",
+              "type": "integer"
+            },
+            "min_y_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Min Y Mm",
+              "type": "integer"
+            },
+            "max_x_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Max X Mm",
+              "type": "integer"
+            },
+            "max_y_mm": {
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Max Y Mm",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "min_x_mm",
+            "min_y_mm",
+            "max_x_mm",
+            "max_y_mm"
+          ],
+          "title": "Zone",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "action": {
+          "enum": [
+            "add",
+            "replace",
+            "remove"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "no_go_zone",
+            "no_mop_zone",
+            "virtual_wall",
+            "carpet",
+            "ignore_carpet_zone",
+            "threshold"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "map_revision": {
+          "title": "Map Revision",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        },
+        "map": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Map"
+        },
+        "boundary": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Boundary"
+        },
+        "geometry": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BoundaryGeometry"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "action",
+        "kind",
+        "map_revision"
+      ],
+      "title": "edit_map_boundariesArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "manage_schedule",
+    "description": "Create, update, delete, enable, or disable one native Roborock schedule.",
+    "inputSchema": {
+      "type": "object",
+      "$defs": {
+        "CleaningSettings": {
+          "additionalProperties": false,
+          "properties": {
+            "vacuum_power": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Vacuum Power"
+            },
+            "mop_intensity": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Mop Intensity"
+            },
+            "route": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Route"
+            },
+            "passes": {
+              "anyOf": [
+                {
+                  "maximum": 3,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Passes"
+            },
+            "carpet_behavior": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Carpet Behavior"
+            },
+            "cleaning_sequence": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 30,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Cleaning Sequence"
+            }
+          },
+          "title": "CleaningSettings",
+          "type": "object"
+        },
+        "ScheduleSpec": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "maxLength": 80,
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            },
+            "local_time": {
+              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+              "title": "Local Time",
+              "type": "string"
+            },
+            "days": {
+              "items": {
+                "enum": [
+                  "mon",
+                  "tue",
+                  "wed",
+                  "thu",
+                  "fri",
+                  "sat",
+                  "sun"
+                ],
+                "type": "string"
+              },
+              "maxItems": 7,
+              "minItems": 1,
+              "title": "Days",
+              "type": "array"
+            },
+            "target": {
+              "additionalProperties": true,
+              "title": "Target",
+              "type": "object"
+            },
+            "settings": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/CleaningSettings"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "name",
+            "local_time",
+            "days",
+            "target"
+          ],
+          "title": "ScheduleSpec",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "action": {
+          "enum": [
+            "create",
+            "update",
+            "delete",
+            "enable",
+            "disable"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        },
+        "schedule": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Schedule"
+        },
+        "spec": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ScheduleSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "manage_scheduleArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "reset_consumable",
+    "description": "Irreversibly reset one reported consumable counter; intentionally exempt from a97 live testing.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "consumable": {
+          "title": "Consumable",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        }
+      },
+      "required": [
+        "consumable"
+      ],
+      "title": "reset_consumableArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "set_device_settings",
+    "description": "Set supported DND, LED, lock, sound, camera, and AI options, then reconcile state.",
+    "inputSchema": {
+      "type": "object",
+      "$defs": {
+        "DeviceSettings": {
+          "additionalProperties": false,
+          "properties": {
+            "dnd": {
+              "anyOf": [
+                {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Dnd"
+            },
+            "led": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Led"
+            },
+            "child_lock": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Child Lock"
+            },
+            "sound_volume": {
+              "anyOf": [
+                {
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Sound Volume"
+            },
+            "timezone": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Timezone"
+            },
+            "obstacle_avoidance": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Obstacle Avoidance"
+            },
+            "furniture_recognition": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Furniture Recognition"
+            },
+            "floor_material_recognition": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Floor Material Recognition"
+            },
+            "dirty_object_detection": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Dirty Object Detection"
+            },
+            "camera_enabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Camera Enabled"
+            }
+          },
+          "title": "DeviceSettings",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "settings": {
+          "$ref": "#/$defs/DeviceSettings"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        }
+      },
+      "required": [
+        "settings"
+      ],
+      "title": "set_device_settingsArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "telepresence",
+    "description": "Control a loopback-only camera/voice session. Codex must ask; no recording is supported.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "enum": [
+            "snapshot",
+            "open",
+            "close",
+            "set_volume"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        },
+        "mode": {
+          "default": "video",
+          "enum": [
+            "video",
+            "voice_chat"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "quality": {
+          "default": "high",
+          "enum": [
+            "low",
+            "standard",
+            "high"
+          ],
+          "title": "Quality",
+          "type": "string"
+        },
+        "volume": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Volume"
+        },
+        "session": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Session"
+        },
+        "ttl_seconds": {
+          "default": 120,
+          "maximum": 300,
+          "minimum": 30,
+          "title": "Ttl Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "telepresenceArguments"
+    },
+    "outputSchema": {
+      "$defs": {
+        "DeviceSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "title": "Key",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "model"
+          ],
+          "title": "DeviceSummary",
+          "type": "object"
+        },
+        "Verification": {
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "verified",
+                "unverified",
+                "not_applicable",
+                "outcome_uncertain"
+              ],
+              "title": "State",
+              "type": "string"
+            },
+            "observed_at": {
+              "format": "date-time",
+              "title": "Observed At",
+              "type": "string"
+            },
+            "evidence": {
+              "additionalProperties": true,
+              "title": "Evidence",
+              "type": "object"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "title": "Verification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "const": true,
+          "default": true,
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "additionalProperties": true,
+          "title": "Result",
+          "type": "object"
+        },
+        "verification": {
+          "$ref": "#/$defs/Verification"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "OperationResult",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  }
+]

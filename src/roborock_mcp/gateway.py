@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
-import json
 import math
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
@@ -20,8 +18,16 @@ from roborock.web_api import RoborockApiClient
 from roborock_mcp.auth import CredentialStore, StoredCredentials
 from roborock_mcp.config import Profile
 from roborock_mcp.errors import DomainError, ErrorCode, outcome_uncertain
+from roborock_mcp.map_transport import send_map_write_once
+from roborock_mcp.maps import (
+    MapSnapshot,
+    merge_preview,
+    resolve_snapshot_rooms,
+    snapshot_from_props,
+    split_preview,
+)
 from roborock_mcp.media import MediaSupervisor, discover_media_binary
-from roborock_mcp.models import DeviceSummary, OperationResult, Verification
+from roborock_mcp.models import DeviceSummary, OperationResult, SplitLine, Verification
 from roborock_mcp.security import opaque_key
 from roborock_mcp.serialization import to_jsonable
 
@@ -114,6 +120,7 @@ class RoborockGateway:
         self.profile = profile
         self.credentials = credentials
         self.manager = manager
+        self._map_locks: dict[str, asyncio.Lock] = {}
         self.api = RoborockApiClient(credentials.username, base_url=credentials.base_url)
         binary = discover_media_binary(profile.media_sidecar_path)
         self.media = media or (MediaSupervisor(binary) if binary else None)
@@ -142,6 +149,11 @@ class RoborockGateway:
             await self.api.session.close()
 
     async def invoke(self, tool: str, arguments: dict[str, Any]) -> OperationResult:
+        if self.profile.stationary_repair and tool in WRITE_TOOLS and tool != "edit_rooms":
+            raise DomainError(
+                ErrorCode.CAPABILITY_DISABLED,
+                "Stationary repair permits only room-edit writes; this action is blocked.",
+            )
         capability = TOOL_CAPABILITIES[tool]
         if not self.profile.capabilities.get(capability, False):
             raise DomainError(
@@ -154,10 +166,18 @@ class RoborockGateway:
         resolved = await self._resolve_device(arguments.get("device"))
         try:
             handler = getattr(self, f"_{tool}")
-            result = await handler(resolved, arguments)
+            if tool in {"edit_rooms", "edit_map_boundaries", "manage_map"}:
+                async with self._map_locks.setdefault(resolved.summary.key, asyncio.Lock()):
+                    result = await handler(resolved, arguments)
+            else:
+                result = await handler(resolved, arguments)
         except DomainError:
             raise
         except TimeoutError as exc:
+            if tool in {"edit_rooms", "edit_map_boundaries", "manage_map"}:
+                raise DomainError(
+                    ErrorCode.TRANSPORT_ERROR, "Map preflight timed out before dispatch.", retryable=True
+                ) from exc
             if tool in WRITE_TOOLS:
                 reconcile = _reconcile_tool(tool)
                 raise outcome_uncertain(
@@ -169,13 +189,17 @@ class RoborockGateway:
                 ErrorCode.TRANSPORT_ERROR, "The Roborock request timed out.", retryable=True
             ) from exc
         except RoborockException as exc:
+            if tool in {"edit_rooms", "edit_map_boundaries", "manage_map"}:
+                raise DomainError(ErrorCode.UPSTREAM_ERROR, "Map preflight failed before dispatch.") from exc
             if tool in WRITE_TOOLS:
                 raise outcome_uncertain(
                     "Roborock returned an error after dispatch may have begun. Reconcile before retrying.",
                     _reconcile_tool(tool),
                     {"device": resolved.summary.key},
                 ) from exc
-            raise DomainError(ErrorCode.UPSTREAM_ERROR, str(exc), retryable=False) from exc
+            raise DomainError(
+                ErrorCode.UPSTREAM_ERROR, "Roborock read failed; no write was confirmed."
+            ) from exc
         return OperationResult(
             device=resolved.summary,
             result=to_jsonable(result),
@@ -260,19 +284,51 @@ class RoborockGateway:
         return props.status
 
     async def _get_map(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
+        snapshot = await self._read_map(resolved, arguments.get("map"))
+        return snapshot.result(arguments.get("format", "summary"))
+
+    async def _read_map(self, resolved: ResolvedDevice, requested: str | None) -> MapSnapshot:
         props = self._props(resolved)
-        await asyncio.gather(props.status.refresh(), props.maps.refresh(), props.rooms.refresh())
+        await props.status.refresh()
+        current = props.maps.current_map
+        if current is None:
+            raise DomainError(ErrorCode.INVALID_STATE, "Current map identity is unavailable.")
+        if requested is not None and str(current) != requested:
+            raise DomainError(
+                ErrorCode.INVALID_ARGUMENT,
+                "Requested map is not active. Reads never switch maps implicitly.",
+            )
+        await props.rooms.refresh()
         await props.map_content.refresh()
-        map_data = to_jsonable(props.map_content)
-        revision = _map_revision(props.map_content)
-        return {
-            "format": arguments.get("format", "summary"),
-            "map_revision": revision,
-            "current_map": props.maps.current_map,
-            "maps": props.maps,
-            "rooms": props.rooms,
-            "map": map_data,
-        }
+        snapshot = snapshot_from_props(props, resolved.summary.key, str(current))
+        await props.status.refresh()
+        await props.rooms.refresh()
+        confirmed = snapshot_from_props(props, resolved.summary.key, str(current))
+        if props.maps.current_map != current or confirmed.revision != snapshot.revision:
+            raise DomainError(ErrorCode.STALE_MAP_REVISION, "Map or room bindings changed during the read.")
+        return snapshot
+
+    async def _map_edit_snapshot(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> MapSnapshot:
+        if arguments.get("device") != resolved.summary.key or not arguments.get("map"):
+            raise DomainError(
+                ErrorCode.DEVICE_SELECTION_REQUIRED, "Map edits require an opaque device key and map ID."
+            )
+        snapshot = await self._read_map(resolved, arguments["map"])
+        if arguments.get("map_revision") != snapshot.revision:
+            raise DomainError(
+                ErrorCode.STALE_MAP_REVISION,
+                "Map or room assignments changed. Fetch get_map and review a fresh proposal.",
+                details={"current": snapshot.revision},
+            )
+        props = self._props(resolved)
+        if (
+            getattr(props.status, "state", None) not in (3, 8, 100)
+            or getattr(props.status, "in_cleaning", None) != 0
+        ):
+            raise DomainError(
+                ErrorCode.INVALID_STATE, "Robot must be idle or charging with no unfinished task."
+            )
+        return snapshot
 
     async def _get_cleaning_settings(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
         props = self._props(resolved)
@@ -500,33 +556,57 @@ class RoborockGateway:
 
     async def _manage_map(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
         props = self._props(resolved)
-        if arguments.get("expected_map_revision"):
-            await self._assert_map_revision(props, arguments["expected_map_revision"])
+        snapshot = await self._map_edit_snapshot(
+            resolved,
+            {
+                **arguments,
+                "map_revision": arguments.get("expected_map_revision"),
+                "map": str(props.maps.current_map)
+                if arguments["action"] == "switch"
+                else arguments.get("map"),
+            },
+        )
         action = arguments["action"]
         if action == "switch":
             map_flag = int(arguments["map"])
-            await props.maps.set_current_map(map_flag)
-            return {"current_map": props.maps.current_map}
+            return await send_map_write_once(
+                props, "load_multi_map", [map_flag], device=resolved.summary.key, map_id=snapshot.map_id
+            )
         command_params = {
             "start_quick_mapping": ("app_start_build_map", None),
             "resume_mapping": ("app_resume_build_map", None),
             "rename": ("name_multi_map", [int(arguments["map"]), arguments["name"]]),
         }
         command, params = command_params[action]
-        return {"response": await props.command.send(command, params), "action": action}
+        return {
+            "response": await send_map_write_once(
+                props, command, params, device=resolved.summary.key, map_id=snapshot.map_id
+            ),
+            "action": action,
+        }
 
     async def _edit_rooms(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
         props = self._props(resolved)
-        await self._assert_map_revision(props, arguments["map_revision"])
-        rooms = await self._resolve_rooms(props, arguments["rooms"])
+        snapshot = await self._map_edit_snapshot(resolved, arguments)
+        rooms = resolve_snapshot_rooms(snapshot, arguments["rooms"])
         action = arguments["action"]
+        prediction: dict[str, Any] = {}
         if action == "rename":
-            params: Any = [rooms[0], arguments["name"]]
-            command = "name_segment"
+            # V1 name_segment maps a robot segment to a cloud room, not reliably
+            # to a display name. Do not send the legacy guessed payload.
+            raise DomainError(
+                ErrorCode.UNSUPPORTED_CAPABILITY,
+                "Room rename semantics are unverified; rename in the official app.",
+            )
         elif action == "merge":
-            params = rooms
+            prediction = merge_preview(snapshot, rooms)
+            params: Any = rooms
             command = "merge_segment"
-        else:
+        elif action == "split":
+            if len(rooms) != 1:
+                raise DomainError(ErrorCode.INVALID_ARGUMENT, "Split requires exactly one room.")
+            split_line = SplitLine.model_validate(arguments["split_line"])
+            prediction = split_preview(snapshot, rooms[0], split_line)
             line = arguments["split_line"]
             params = [
                 rooms[0],
@@ -536,18 +616,37 @@ class RoborockGateway:
                 line["end"]["y_mm"],
             ]
             command = "split_segment"
-        return {"response": await props.command.send(command, params), "action": action}
+        else:
+            raise DomainError(ErrorCode.INVALID_ARGUMENT, "Unsupported room edit.")
+        if arguments.get("dry_run", True):
+            return {
+                "dry_run": True,
+                "action": action,
+                "map_revision": snapshot.revision,
+                "prediction": prediction,
+                "live_verified_on_a97": False,
+            }
+        # Refresh again immediately before dispatch. The upstream protocol has no
+        # atomic compare-and-swap, so the supervisor must close other map editors.
+        await self._map_edit_snapshot(resolved, arguments)
+        response = await send_map_write_once(
+            props, command, params, device=resolved.summary.key, map_id=snapshot.map_id
+        )
+        return {
+            "response": response,
+            "action": action,
+            "previous_map_revision": snapshot.revision,
+            "reconcile_with": {
+                "tool": "get_map",
+                "arguments": {"device": resolved.summary.key, "map": snapshot.map_id, "format": "all"},
+            },
+        }
 
     async def _edit_map_boundaries(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
-        props = self._props(resolved)
-        await self._assert_map_revision(props, arguments["map_revision"])
-        payload = {
-            "action": arguments["action"],
-            "kind": arguments["kind"],
-            "boundary": arguments.get("boundary"),
-            "geometry": arguments.get("geometry"),
-        }
-        return {"response": await props.command.send("save_map", [payload]), "candidate_payload": payload}
+        raise DomainError(
+            ErrorCode.UNSUPPORTED_CAPABILITY,
+            "Boundary-write payload is unverified; use the official app. Room repair does not add barriers.",
+        )
 
     async def _manage_schedule(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
         props = self._props(resolved)
@@ -674,17 +773,6 @@ class RoborockGateway:
         )
         return f"roborock://{host}?{query}"
 
-    @staticmethod
-    async def _assert_map_revision(props: Any, expected: str) -> None:
-        await props.map_content.refresh()
-        current = _map_revision(props.map_content)
-        if current != expected:
-            raise DomainError(
-                ErrorCode.STALE_MAP_REVISION,
-                "The map changed after it was read. Fetch get_map and re-plan before writing.",
-                details={"expected": expected, "current": current},
-            )
-
     async def _resolve_rooms(self, props: Any, references: list[str]) -> list[int]:
         await props.rooms.refresh()
         rooms = props.rooms.rooms or []
@@ -713,11 +801,6 @@ def _motion_values(direction: str, speed: str) -> tuple[float, float]:
         "turn_left": (0.0, angular),
         "turn_right": (0.0, -angular),
     }[direction]
-
-
-def _map_revision(map_content: Any) -> str:
-    payload = json.dumps(to_jsonable(map_content), sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(payload.encode()).hexdigest()[:24]
 
 
 def _resolve_named(
