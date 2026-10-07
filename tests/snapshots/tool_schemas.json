@@ -3012,7 +3012,7 @@
   },
   {
     "name": "manage_map",
-    "description": "Quick-map, resume, switch, or rename; deletion, backup, and recovery are not exposed.",
+    "description": "Preview map actions by default. Quick mapping moves the robot and requires a free map slot.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -3074,6 +3074,11 @@
           ],
           "default": null,
           "title": "Expected Map Revision"
+        },
+        "dry_run": {
+          "default": true,
+          "title": "Dry Run",
+          "type": "boolean"
         }
       },
       "required": [

@@ -567,13 +567,50 @@ class RoborockGateway:
             },
         )
         action = arguments["action"]
+        if action == "start_quick_mapping":
+            inventory = await self._quick_mapping_inventory(props, snapshot.map_id)
+            plan = {
+                "action": action,
+                "dry_run": arguments.get("dry_run", True),
+                "map_revision": snapshot.revision,
+                "effects": {
+                    "robot_moves": True,
+                    "cleaning_requested": False,
+                    "intended_destination": "new_map_slot",
+                    "existing_maps": inventory,
+                    "delete_commands_sent": False,
+                    "existing_map_retention": "requires_app_readback",
+                },
+                "warning": "Firmware behavior is not yet verified. Inspect and save the result in the app.",
+            }
+            if plan["dry_run"]:
+                return plan
+            await self._map_edit_snapshot(
+                resolved, {**arguments, "map_revision": arguments.get("expected_map_revision")}
+            )
+            if await self._quick_mapping_inventory(props, snapshot.map_id) != inventory:
+                raise DomainError(ErrorCode.STALE_MAP_REVISION, "Map inventory changed before mapping.")
+            plan["response"] = await send_map_write_once(
+                props,
+                "app_start_build_map",
+                [],
+                device=resolved.summary.key,
+                map_id=snapshot.map_id,
+                active_map_after_dispatch=True,
+            )
+            plan["reconcile_with"] = [
+                {"tool": "get_status", "arguments": {"device": resolved.summary.key}},
+                {"tool": "get_map", "arguments": {"device": resolved.summary.key, "format": "all"}},
+            ]
+            return plan
+        if arguments.get("dry_run", True):
+            return {"dry_run": True, "action": action, "map_revision": snapshot.revision}
         if action == "switch":
             map_flag = int(arguments["map"])
             return await send_map_write_once(
                 props, "load_multi_map", [map_flag], device=resolved.summary.key, map_id=snapshot.map_id
             )
         command_params = {
-            "start_quick_mapping": ("app_start_build_map", None),
             "resume_mapping": ("app_resume_build_map", None),
             "rename": ("name_multi_map", [int(arguments["map"]), arguments["name"]]),
         }
@@ -583,6 +620,37 @@ class RoborockGateway:
                 props, command, params, device=resolved.summary.key, map_id=snapshot.map_id
             ),
             "action": action,
+        }
+
+    @staticmethod
+    async def _quick_mapping_inventory(props: Any, current_map: str) -> dict[str, Any]:
+        """Require a free map slot; never reset or delete a map to make room."""
+        await props.maps.refresh()
+        capacity, count = props.maps.max_multi_map, props.maps.multi_map_count
+        maps = props.maps.map_info
+        if (
+            type(capacity) is not int
+            or type(count) is not int
+            or count < 1
+            or count >= capacity
+            or maps is None
+            or len(maps) != count
+            or len({m.map_flag for m in maps}) != count
+            or current_map not in {str(m.map_flag) for m in maps}
+        ):
+            raise DomainError(
+                ErrorCode.INVALID_STATE,
+                "Quick mapping requires a verified free map slot. Enable multiple floors in the app; "
+                "do not delete the existing map.",
+            )
+        if props.status.state != 8 or getattr(props.status, "battery", 0) < 20:
+            raise DomainError(
+                ErrorCode.INVALID_STATE, "Start mapping from the charging dock with battery >=20%."
+            )
+        return {
+            "capacity": capacity,
+            "count": count,
+            "maps": sorted([{"id": str(m.map_flag), "name": m.name} for m in maps], key=lambda m: m["id"]),
         }
 
     async def _edit_rooms(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:

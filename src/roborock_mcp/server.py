@@ -347,8 +347,9 @@ def build_server(
         map: str | None = None,
         name: Annotated[str | None, Field(max_length=40)] = None,
         expected_map_revision: str | None = None,
+        dry_run: bool = True,
     ) -> OperationResult:
-        """Quick-map, resume, switch, or rename; deletion, backup, and recovery are not exposed."""
+        """Preview map actions by default. Quick mapping moves the robot and requires a free map slot."""
         if action in {"switch", "rename"} and map is None:
             raise ToolError(f"{action} requires a map")
         if action == "rename" and not name:
@@ -362,6 +363,7 @@ def build_server(
                 "map": map,
                 "name": name,
                 "expected_map_revision": expected_map_revision,
+                "dry_run": dry_run,
             },
         )
 

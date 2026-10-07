@@ -35,6 +35,115 @@ def split_line() -> dict[str, Any]:
     return {"start": {"x_mm": 20_775, "y_mm": 20_000}, "end": {"x_mm": 20_775, "y_mm": 21_600}}
 
 
+def mapping_fixture() -> tuple[Any, Any, Any, dict[str, Any]]:
+    gateway, resolved, props = fixture_gateway(stationary=False)
+    props.status.battery = 100
+    props.maps.refresh = AsyncMock()
+    props.maps.max_multi_map = 4
+    props.maps.multi_map_count = 1
+    props.maps.map_info = [SimpleNamespace(map_flag=0, name="Existing synthetic map")]
+    snapshot = snapshot_from_props(props, resolved.summary.key, "0")
+    arguments = {
+        "device": resolved.summary.key,
+        "map": "0",
+        "action": "start_quick_mapping",
+        "expected_map_revision": snapshot.revision,
+    }
+    return gateway, resolved, props, arguments
+
+
+@pytest.mark.asyncio
+async def test_quick_mapping_preview_never_dispatches_and_apply_sends_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gateway, _, props, arguments = mapping_fixture()
+    send = AsyncMock(return_value={"acknowledged": True})
+    monkeypatch.setattr("roborock_mcp.gateway.send_map_write_once", send)
+    preview = await gateway.invoke("manage_map", arguments)
+    assert preview.result["dry_run"] is True
+    assert preview.result["effects"]["robot_moves"] is True
+    assert preview.result["effects"]["cleaning_requested"] is False
+    send.assert_not_called()
+    await gateway.invoke("manage_map", {**arguments, "dry_run": False})
+    send.assert_awaited_once_with(
+        props,
+        "app_start_build_map",
+        [],
+        device="device_synthetic",
+        map_id="0",
+        active_map_after_dispatch=True,
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "invalid", ["full", "unknown", "wrong_map", "missing_map", "undocked", "low_battery"]
+)
+async def test_quick_mapping_requires_free_slot_and_dock(
+    monkeypatch: pytest.MonkeyPatch, invalid: str
+) -> None:
+    gateway, _, props, arguments = mapping_fixture()
+    send = AsyncMock()
+    monkeypatch.setattr("roborock_mcp.gateway.send_map_write_once", send)
+    if invalid == "full":
+        props.maps.max_multi_map = 1
+    elif invalid == "unknown":
+        props.maps.max_multi_map = None
+    elif invalid == "wrong_map":
+        props.maps.map_info[0].map_flag = 1
+    elif invalid == "missing_map":
+        props.maps.map_info = []
+    elif invalid == "undocked":
+        props.status.state = 3
+    else:
+        props.status.battery = 19
+    with pytest.raises(DomainError) as error:
+        await gateway.invoke("manage_map", {**arguments, "dry_run": False})
+    assert error.value.code == ErrorCode.INVALID_STATE
+    send.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_quick_mapping_inventory_race_prevents_dispatch(monkeypatch: pytest.MonkeyPatch) -> None:
+    gateway, _, props, arguments = mapping_fixture()
+    send = AsyncMock()
+    monkeypatch.setattr("roborock_mcp.gateway.send_map_write_once", send)
+    calls = 0
+
+    async def refresh() -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            props.maps.multi_map_count = 2
+            props.maps.map_info.append(SimpleNamespace(map_flag=1, name="New concurrent map"))
+
+    props.maps.refresh = refresh
+    with pytest.raises(DomainError) as error:
+        await gateway.invoke("manage_map", {**arguments, "dry_run": False})
+    assert error.value.code == ErrorCode.STALE_MAP_REVISION
+    send.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_uncertain_mapping_start_reconciles_status_and_new_active_map(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    channel = RpcChannel(lambda: cast(Any, ["first", "fallback"]), Mock())
+    props = SimpleNamespace(maps=SimpleNamespace(rpc_channel=channel))
+    send = AsyncMock(side_effect=TimeoutError())
+    monkeypatch.setattr(RpcChannel, "_send_rpc", send)
+    with pytest.raises(DomainError) as error:
+        await send_map_write_once(
+            props, "app_start_build_map", [], device="device_fake", map_id="0", active_map_after_dispatch=True
+        )
+    send.assert_awaited_once()
+    assert error.value.code == ErrorCode.OUTCOME_UNCERTAIN
+    assert error.value.reconcile_with == [
+        {"tool": "get_status", "arguments": {"device": "device_fake"}},
+        {"tool": "get_map", "arguments": {"device": "device_fake", "format": "all"}},
+    ]
+
+
 def test_native_geometry_and_render_calibration() -> None:
     props = fixture_props()
     snapshot = snapshot_from_props(props, "device_synthetic", "0")

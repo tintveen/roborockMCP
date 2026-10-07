@@ -48,6 +48,27 @@ connected floor parts; maps with disconnected fragments can produce no candidate
 Do not weaken that result into an automatic correction or claim reconstructed
 walls. With remapping excluded, this case has no supported repair path.
 
+## Separately authorized remapping
+
+If the user subsequently authorizes a mapping run, the stationary-only constraint
+changes for that run. Keep `--stationary-repair` unchanged: it must still reject
+mapping. Use a separately configured session for the authorized mapping action.
+
+`manage_map` now previews by default. `start_quick_mapping` requires a fresh map
+revision, the selected device at its charging dock, at least 20% battery, and a
+fresh inventory proving a free map slot. With only one occupied slot, enable
+multiple floors in the official app first. The adapter never deletes a map to
+make room. Preview, then explicitly apply once with `dry_run=false` after the
+human has opened the intended interior doors and prepared the mapping area.
+No cleaning command is sent. Actual mapping and retention behavior still need
+hardware acceptance; a free slot is a precondition, not proof of retention.
+
+Refresh status and the newly active map after dispatch; do not reconcile using
+the old map ID because mapping may change it. On uncertain dispatch, stop and
+inspect those reads instead of resending. Save and name the new map through the
+official app where the adapter lacks verified semantics, confirm the original
+map remains recoverable, and inspect all room selections against the floor plan.
+
 Room renaming through the previous guessed `name_segment` payload is disabled.
 The command associates cloud room identifiers on some implementations, which is
 not a verified display-name operation for this device. Rename in the official
@@ -133,6 +154,9 @@ a later, separately authorized cleaning test.
   and `_send_rpc` primitive. The adapter fails closed on another library version.
 - Historical split/merge payloads: [Valetudo source at immutable revision](https://github.com/rand256/valetudo/blob/ab9fe2fb379f7f10d9a1556739b4fcc78cbfe03b/lib/miio/Vacuum.js).
   This establishes candidate protocol syntax, not a97 firmware compatibility.
+- Mapping-only start: [Valetudo mapping capability at immutable revision](https://github.com/Hypfer/Valetudo/blob/31bbc50c8dc34d02d4ed1a24d2febe0444344c64/backend/lib/robots/roborock/capabilities/RoborockMappingPassCapability.js)
+  sends `app_start_build_map` with empty parameters. This is source evidence,
+  not proof of map retention or acceptance on a97 firmware.
 - [Official room merge/divide guidance](https://support.roborock.com/hc/en-us/articles/360030486432-How-do-I-merge-or-divide-rooms-on-the-map).
 
 Run Ruff, mypy, fake-only pytest, the package build, and CI before handoff.

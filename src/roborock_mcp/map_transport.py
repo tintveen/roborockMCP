@@ -24,7 +24,15 @@ class _QuietRpcLogger:
         pass
 
 
-async def send_map_write_once(props: Any, command: str, params: Any, *, device: str, map_id: str) -> Any:
+async def send_map_write_once(
+    props: Any,
+    command: str,
+    params: Any,
+    *,
+    device: str,
+    map_id: str,
+    active_map_after_dispatch: bool = False,
+) -> Any:
     channel = props.maps.rpc_channel
     if version("python-roborock") != "7.1.1" or not isinstance(channel, RpcChannel):
         raise DomainError(ErrorCode.UNSUPPORTED_CAPABILITY, "Single-dispatch adapter is unavailable.")
@@ -39,9 +47,15 @@ async def send_map_write_once(props: Any, command: str, params: Any, *, device: 
         if response not in ("ok", ["ok"]):
             raise ValueError("Unexpected acknowledgement")
     except (Exception, asyncio.CancelledError) as exc:
-        raise outcome_uncertain(
+        arguments: dict[str, Any] = {"device": device, "format": "all"}
+        if not active_map_after_dispatch:
+            arguments["map"] = map_id
+        error = outcome_uncertain(
             "Map dispatch began; its outcome is uncertain. Do not repeat the write.",
             "get_map",
-            {"device": device, "map": map_id, "format": "all"},
-        ) from exc
+            arguments,
+        )
+        if active_map_after_dispatch:
+            error.reconcile_with.insert(0, {"tool": "get_status", "arguments": {"device": device}})
+        raise error from exc
     return {"acknowledged": True, "read_back_required": True}
