@@ -1,8 +1,11 @@
 # Stationary room-map repair
 
-Status: implemented and tested offline. Supervised read-only discovery, status,
-room membership and native map reads worked on S8 MaxV Ultra firmware 02.39.60.
-Room writes, restoration and complete repair acceptance remain unverified.
+Status: implemented and tested offline. Supervised discovery, status, room
+membership and native map reads worked on S8 MaxV Ultra firmware 02.39.60.
+One explicitly approved stationary room split was acknowledged and persisted
+across two independent map reads. Only room membership changed; occupancy and
+restrictions stayed unchanged. Merges, restoration, official-app room-selection
+acceptance and complete repair remain unverified.
 Public release follows successful supervised acceptance. The tool surface
 remains exactly 25 semantic tools.
 
@@ -42,6 +45,15 @@ latest map revision. `dry_run` defaults to true. Preview a split or merge, revie
 it, then set `dry_run=false` to dispatch that one operation. Refresh afterwards
 and resolve any newly assigned room IDs before constructing another operation.
 Names and room keys from a different device or map cannot identify a room.
+
+The observed split differed slightly from the mathematical half-plane preview.
+The firmware assigned a new room ID and a default name to one part, and removed
+the affected room from the custom cleaning sequence without adding its new ID.
+Do not equate acknowledgement with exact preview acceptance. Capture the full
+routine definitions and cleaning sequence before editing; compare afterwards and
+present any required name or reference repairs. Restore unsupported settings in
+the official app. This single result does not establish merge compatibility or
+cleaning performance, and no movement was used for this verification.
 
 Split/merge operations change room membership, not observed wall geometry.
 Incorrect walls do not by themselves rule out a useful room-assignment correction:
