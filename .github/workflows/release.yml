@@ -55,6 +55,7 @@ jobs:
           name="go2rtc-roborockmcp-${GOOS}-${GOARCH}${suffix}"
           go -C /tmp/go2rtc build -trimpath -ldflags '-s -w' -o "$GITHUB_WORKSPACE/$name" .
           sha256sum "$name" > "$name.sha256"
+          cp /tmp/go2rtc/LICENSE "$name.LICENSE.txt"
       - uses: actions/upload-artifact@v4
         with:
           name: sidecar-${{ matrix.goos }}-${{ matrix.goarch }}
