@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
+from roborock_mcp.errors import DomainError, ErrorCode
 from roborock_mcp.gateway import TOOL_CAPABILITIES, WRITE_TOOLS
 from roborock_mcp.models import DeviceSummary, OperationResult, Verification
 
 
 class FakeGateway:
-    def __init__(self) -> None:
+    def __init__(self, *, stationary_repair: bool = False) -> None:
+        self.stationary_repair = stationary_repair
         self.closed = False
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.device = DeviceSummary(key="device_test", name="Test S8 MaxV Ultra", model="roborock.vacuum.a97")
@@ -24,6 +26,8 @@ class FakeGateway:
         self.closed = True
 
     async def invoke(self, tool: str, arguments: dict[str, Any]) -> OperationResult:
+        if self.stationary_repair and tool in WRITE_TOOLS and tool != "edit_rooms":
+            raise DomainError(ErrorCode.CAPABILITY_DISABLED, "Stationary repair blocks this write.")
         self.calls.append((tool, arguments))
         result: dict[str, Any]
         if tool == "get_devices":

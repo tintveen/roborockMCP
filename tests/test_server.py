@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -56,6 +58,10 @@ async def test_exact_tool_contract_and_annotations(fake_gateway: FakeGateway) ->
     assert all(tool.annotations and not tool.annotations.read_only_hint for tool in listed.tools[10:])
     assert len(SERVER_INSTRUCTIONS[:512]) <= 512
     assert "OUTCOME_UNCERTAIN" in SERVER_INSTRUCTIONS
+    snapshot = Path(__file__).parent / "snapshots" / "tool_schemas.json"
+    assert [
+        tool.model_dump(mode="json", by_alias=True, exclude_none=True) for tool in listed.tools
+    ] == json.loads(snapshot.read_text())
 
 
 VALID_CALLS = {
@@ -86,6 +92,8 @@ VALID_CALLS = {
         "rooms": ["Kitchen"],
         "map_revision": "rev1",
         "name": "Galley",
+        "device": "device_test",
+        "map": "0",
     },
     "edit_map_boundaries": {
         "action": "add",

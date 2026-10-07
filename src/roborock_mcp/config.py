@@ -22,6 +22,7 @@ class Profile(BaseModel):
     default_device_key: str | None = None
     capabilities: dict[str, bool] = Field(default_factory=dict)
     media_sidecar_path: str | None = None
+    stationary_repair: bool = False
 
 
 class ProfileStore:

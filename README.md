@@ -1,12 +1,13 @@
 # roborockMCP
 
-Private, Codex-first Model Context Protocol server for a Roborock S8 MaxV Ultra.
+Codex-first Model Context Protocol server with supervised stationary room-map
+repair for a Roborock S8 MaxV Ultra.
 
 > [!WARNING]
-> This repository is in pre-hardware-validation development (`0.1.0.dev0`). No
-> command path is claimed to be safe or compatible with a real S8 MaxV Ultra
-> until the staged human-in-the-loop report says so. Do not connect credentials
-> or a robot during ordinary development.
+> Stationary split/merge repair was accepted in the official app on firmware
+> 02.39.60. Other control paths remain experimental and hardware-unverified.
+> No cleaning or movement was used for this acceptance. Connect a real robot
+> only during an explicitly started, physically supervised HITL session.
 
 ## What is implemented
 
@@ -15,8 +16,17 @@ Private, Codex-first Model Context Protocol server for a Roborock S8 MaxV Ultra.
 - Dynamic device/capability discovery through `python-roborock` 7.1.1.
 - Bounded remote-control and short-lived, loopback-only media abstractions.
 - A pinned go2rtc v1.9.14 sidecar build with a narrow region/client-ID patch.
-- Stable errors, no automatic write retry, and read-back guidance for uncertain outcomes.
+- Stable errors, single-dispatch RPC writes, and read-back guidance for uncertain outcomes.
 - Fake-backed unit and in-memory MCP tests that never contact Roborock.
+- Stationary map repair: native geometry/image reads, conservative room-boundary
+  previews, explicit device/map revisions, single-dispatch split/merge edits, and
+  restoration of existing names and native room order.
+
+See [the stationary repair workflow](docs/MAP_REPAIR.md) for supervision,
+recovery limitations, and the `--stationary-repair` server mode. Room edits now
+preview by default. Existing-name restoration explicitly discloses that it
+resets room-type tags. Arbitrary new names and boundary writes are disabled;
+use the official app for those operations and native map backups.
 
 There is deliberately no arbitrary `raw_command` tool. Map deletion, backup,
 and recovery are not part of 0.1.0. Consumable reset is exposed but is explicitly
@@ -44,7 +54,7 @@ This command speaks MCP on stdout; it is not an interactive shell.
 ## Codex development configuration
 
 Copy the relevant portion of [`.codex/config.toml.example`](.codex/config.toml.example)
-to a trusted project or user Codex configuration. The example starts this private
+to a trusted project or user Codex configuration. The example starts this
 checkout directly and prompts for writes plus sensitive reads.
 
 Codex supports local STDIO MCP servers and per-tool approval modes. See the
@@ -97,8 +107,9 @@ Control and write tools:
 24. `set_device_settings`
 25. `telepresence`
 
-Every response reports whether its capability is source-backed and whether the
-specific branch has been live-verified on the recorded a97 firmware.
+Responses distinguish read verification from unverified write acknowledgements.
+The runtime does not certify hardware acceptance for an individual call; see
+[the firmware compatibility report](docs/COMPATIBILITY.md) for observed results.
 
 ## Media sidecar
 
@@ -128,8 +139,9 @@ and a secret/history audit. Hardware work then proceeds one stage at a time:
 8. camera and voice;
 9. sanitized acceptance report.
 
-See [`docs/HITL.md`](docs/HITL.md). The private repository is not made public
-without a separate explicit decision.
+See [`docs/HITL.md`](docs/HITL.md). This sequence is not blanket authorization to
+exercise every feature. A stationary repair session blocks motion and all other
+write tools, even if they are visible in the tool list.
 
 ## Privacy and affiliation
 
