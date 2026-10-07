@@ -18,7 +18,7 @@ from roborock.web_api import RoborockApiClient
 from roborock_mcp.auth import CredentialStore, StoredCredentials
 from roborock_mcp.config import Profile
 from roborock_mcp.errors import DomainError, ErrorCode, outcome_uncertain
-from roborock_mcp.map_transport import send_map_write_once
+from roborock_mcp.map_transport import send_map_write_once, send_rpc_write_once
 from roborock_mcp.maps import (
     MapSnapshot,
     merge_preview,
@@ -278,6 +278,15 @@ class RoborockGateway:
             raise DomainError(ErrorCode.UNSUPPORTED_CAPABILITY, "This tool requires a V1 vacuum.")
         return props
 
+    async def _write(self, resolved: ResolvedDevice, tool: str, command: str, params: Any = None) -> Any:
+        return await send_rpc_write_once(
+            self._props(resolved).command._rpc_channel,
+            command,
+            params,
+            reconcile_tool=_reconcile_tool(tool),
+            arguments={"device": resolved.summary.key},
+        )
+
     async def _get_status(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
         props = self._props(resolved)
         await props.status.refresh()
@@ -339,6 +348,8 @@ class RoborockGateway:
             "mop_mode": props.status.mop_mode,
             "clean_area": props.status.clean_area,
             "requested_rooms": arguments.get("rooms") or [],
+            "cleaning_sequence": await props.command.send("get_clean_sequence"),
+            "room_settings": await props.command.send("get_customize_clean_mode"),
         }
 
     async def _get_dock_status(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
@@ -407,11 +418,14 @@ class RoborockGateway:
         props = self._props(resolved)
         mode = arguments["mode"]
         if mode == "all":
-            response = await props.command.send("app_start")
+            response = await self._write(resolved, "start_cleaning", "app_start")
         elif mode == "rooms":
             segments = await self._resolve_rooms(props, arguments.get("rooms") or [])
-            response = await props.command.send(
-                "app_segment_clean", [{"segments": segments, "repeat": arguments.get("passes", 1)}]
+            response = await self._write(
+                resolved,
+                "start_cleaning",
+                "app_segment_clean",
+                [{"segments": segments, "repeat": arguments.get("passes", 1)}],
             )
         elif mode == "zones":
             zones = [
@@ -424,9 +438,9 @@ class RoborockGateway:
                 ]
                 for zone in arguments.get("zones") or []
             ]
-            response = await props.command.send("app_zoned_clean", zones)
+            response = await self._write(resolved, "start_cleaning", "app_zoned_clean", zones)
         else:
-            response = await props.command.send("app_spot")
+            response = await self._write(resolved, "start_cleaning", "app_spot")
         await props.status.refresh()
         return {"response": response, "status": props.status}
 
@@ -438,7 +452,7 @@ class RoborockGateway:
             "return_to_dock": "app_charge",
         }[arguments["action"]]
         props = self._props(resolved)
-        response = await props.command.send(command)
+        response = await self._write(resolved, "control_cleaning", command)
         await props.status.refresh()
         return {"response": response, "status": props.status}
 
@@ -452,6 +466,11 @@ class RoborockGateway:
     async def _set_cleaning_settings(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
         props = self._props(resolved)
         settings = arguments["settings"]
+        if settings.get("cleaning_sequence") is not None:
+            raise DomainError(
+                ErrorCode.UNSUPPORTED_CAPABILITY,
+                "Use edit_rooms set_sequence with a fresh map revision and expected_sequence.",
+            )
         command_map = {
             "vacuum_power": "set_custom_mode",
             "mop_intensity": "set_water_box_custom_mode",
@@ -463,12 +482,13 @@ class RoborockGateway:
         responses = {}
         for key, value in settings.items():
             if value is not None:
-                responses[key] = await props.command.send(command_map[key], [value])
+                responses[key] = await self._write(
+                    resolved, "set_cleaning_settings", command_map[key], [value]
+                )
         await props.status.refresh()
         return {"responses": responses, "status": props.status}
 
     async def _dock_action(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
-        props = self._props(resolved)
         action = arguments["action"]
         command_params: dict[str, tuple[str, Any]] = {
             "empty_dustbin": ("app_start_collect_dust", None),
@@ -481,11 +501,10 @@ class RoborockGateway:
             "empty_rinse_tank": ("app_empty_rinse_tank_water", None),
         }
         command, params = command_params[action]
-        response = await props.command.send(command, params)
+        response = await self._write(resolved, "dock_action", command, params)
         return {"response": response, "action": action}
 
     async def _set_dock_settings(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
-        props = self._props(resolved)
         command_map: dict[str, tuple[str, Callable[[Any], Any]]] = {
             "auto_empty": ("set_dust_collection_switch_status", lambda value: {"status": int(value)}),
             "dust_collection_mode": ("set_dust_collection_mode", lambda value: {"mode": value}),
@@ -499,17 +518,18 @@ class RoborockGateway:
         for key, value in arguments["settings"].items():
             if value is not None:
                 command, serializer = command_map[key]
-                responses[key] = await props.command.send(command, serializer(value))
+                responses[key] = await self._write(resolved, "set_dock_settings", command, serializer(value))
         return {"responses": responses}
 
     async def _navigate(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
-        props = self._props(resolved)
         action = arguments["action"]
         if action == "goto":
             point = arguments.get("target", {}).get("point")
             if point is None:
-                raise DomainError(ErrorCode.INVALID_ARGUMENT, "goto requires target.point for v0.1.0.dev0")
-            response = await props.command.send("app_goto_target", [point["x_mm"], point["y_mm"]])
+                raise DomainError(ErrorCode.INVALID_ARGUMENT, "goto requires target.point")
+            response = await self._write(
+                resolved, "navigate", "app_goto_target", [point["x_mm"], point["y_mm"]]
+            )
         else:
             command = {
                 "stop": "stop_goto_target",
@@ -518,14 +538,13 @@ class RoborockGateway:
                 "resume_patrol": "app_resume_patrol",
                 "stop_patrol": "app_stop",
             }[action]
-            response = await props.command.send(command)
+            response = await self._write(resolved, "navigate", command)
         return {"response": response, "action": action}
 
     async def _remote_control(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
-        props = self._props(resolved)
         if arguments["action"] == "stop":
-            await props.command.send("app_rc_stop")
-            await props.command.send("app_rc_end")
+            await self._write(resolved, "remote_control", "app_rc_stop")
+            await self._write(resolved, "remote_control", "app_rc_end")
             return {"stopped": True}
         moves = arguments.get("moves") or []
         total = sum(int(item["duration_ms"]) for item in moves)
@@ -533,11 +552,13 @@ class RoborockGateway:
             raise DomainError(
                 ErrorCode.INVALID_ARGUMENT, "Total remote-control motion may not exceed 5000 ms."
             )
-        await props.command.send("app_rc_start")
+        await self._write(resolved, "remote_control", "app_rc_start")
         try:
             for seqnum, motion in enumerate(moves, start=1):
                 velocity, omega = _motion_values(motion["direction"], motion["speed"])
-                await props.command.send(
+                await self._write(
+                    resolved,
+                    "remote_control",
                     "app_rc_move",
                     [
                         {
@@ -550,8 +571,8 @@ class RoborockGateway:
                 )
                 await asyncio.sleep(motion["duration_ms"] / 1000)
         finally:
-            await props.command.send("app_rc_stop")
-            await props.command.send("app_rc_end")
+            await self._write(resolved, "remote_control", "app_rc_stop")
+            await self._write(resolved, "remote_control", "app_rc_end")
         return {"moves_completed": len(moves), "duration_ms": total}
 
     async def _manage_map(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
@@ -659,6 +680,7 @@ class RoborockGateway:
         rooms = resolve_snapshot_rooms(snapshot, arguments["rooms"])
         action = arguments["action"]
         prediction: dict[str, Any] = {}
+        params: Any
         if action == "rename":
             # V1 name_segment maps a robot segment to a cloud room, not reliably
             # to a display name. Do not send the legacy guessed payload.
@@ -666,9 +688,11 @@ class RoborockGateway:
                 ErrorCode.UNSUPPORTED_CAPABILITY,
                 "Room rename semantics are unverified; rename in the official app.",
             )
+        elif action in {"restore_names", "set_sequence"}:
+            command, params, prediction = await self._room_metadata_plan(resolved, snapshot, rooms, arguments)
         elif action == "merge":
             prediction = merge_preview(snapshot, rooms)
-            params: Any = rooms
+            params = rooms
             command = "merge_segment"
         elif action == "split":
             if len(rooms) != 1:
@@ -697,18 +721,90 @@ class RoborockGateway:
         # Refresh again immediately before dispatch. The upstream protocol has no
         # atomic compare-and-swap, so the supervisor must close other map editors.
         await self._map_edit_snapshot(resolved, arguments)
-        response = await send_map_write_once(
-            props, command, params, device=resolved.summary.key, map_id=snapshot.map_id
-        )
+        if action in {"restore_names", "set_sequence"}:
+            _, confirmed_params, _ = await self._room_metadata_plan(resolved, snapshot, rooms, arguments)
+            if confirmed_params != params:
+                raise DomainError(ErrorCode.STALE_MAP_REVISION, "Room metadata changed before dispatch.")
+        if action == "set_sequence":
+            response = await self._write(resolved, "set_cleaning_settings", command, params)
+        else:
+            response = await send_map_write_once(
+                props, command, params, device=resolved.summary.key, map_id=snapshot.map_id
+            )
         return {
             "response": response,
             "action": action,
             "previous_map_revision": snapshot.revision,
             "reconcile_with": {
-                "tool": "get_map",
-                "arguments": {"device": resolved.summary.key, "map": snapshot.map_id, "format": "all"},
+                "tool": "get_cleaning_settings" if action == "set_sequence" else "get_map",
+                "arguments": {"device": resolved.summary.key}
+                if action == "set_sequence"
+                else {"device": resolved.summary.key, "map": snapshot.map_id, "format": "all"},
             },
         }
+
+    async def _room_metadata_plan(
+        self, resolved: ResolvedDevice, snapshot: MapSnapshot, rooms: list[int], arguments: dict[str, Any]
+    ) -> tuple[str, Any, dict[str, Any]]:
+        """Narrow full-map restoration; never create or rename account-wide rooms."""
+        if set(rooms) != {room["segment_id"] for room in snapshot.rooms} or len(set(rooms)) != len(rooms):
+            raise DomainError(
+                ErrorCode.INVALID_ARGUMENT, "Metadata restoration requires every map room once."
+            )
+        props = self._props(resolved)
+        if arguments["action"] == "set_sequence":
+            previous = await props.command.send("get_clean_sequence")
+            if not isinstance(previous, list) or any(type(x) is not int for x in previous):
+                raise DomainError(ErrorCode.UNSUPPORTED_CAPABILITY, "Room order response is unsupported.")
+            if not arguments.get("dry_run", True) and arguments.get("expected_sequence") != previous:
+                raise DomainError(
+                    ErrorCode.STALE_MAP_REVISION, "Room order changed or expected_sequence is missing."
+                )
+            return (
+                "set_clean_sequence",
+                rooms,
+                {
+                    "previous_sequence": previous,
+                    "sequence": rooms,
+                    "robot_moves": False,
+                },
+            )
+        names = arguments.get("names")
+        if (
+            not isinstance(names, list)
+            or len(names) != len(rooms)
+            or any(not isinstance(n, str) or not n.strip() or len(n) > 40 for n in names)
+            or len(set(names)) != len(names)
+        ):
+            raise DomainError(ErrorCode.INVALID_ARGUMENT, "Provide one distinct existing name per map room.")
+        if not arguments.get("dry_run", True) and not arguments.get("reset_room_types", False):
+            raise DomainError(
+                ErrorCode.INVALID_ARGUMENT,
+                "Name restoration resets room types to 0; reset_room_types is required.",
+            )
+        catalog = await props.rooms._refresh_rooms()
+        table = []
+        for segment, name in zip(rooms, names, strict=True):
+            matches = [room for room in catalog if room.name == name]
+            if len(matches) != 1:
+                raise DomainError(
+                    ErrorCode.AMBIGUOUS_REFERENCE, "Each name must match exactly one existing cloud room."
+                )
+            table.append({"miRoomId": matches[0].iot_id, "robotRoomId": segment})
+        if len({row["miRoomId"] for row in table}) != len(table):
+            raise DomainError(ErrorCode.AMBIGUOUS_REFERENCE, "Cloud room bindings are not unique.")
+        return (
+            "name_segment",
+            sorted(table, key=lambda row: row["robotRoomId"]),
+            {
+                "assignments": [
+                    {"segment_id": segment, "name": name} for segment, name in zip(rooms, names, strict=True)
+                ],
+                "room_type_ids_after": 0,
+                "existing_cloud_names_only": True,
+                "robot_moves": False,
+            },
+        )
 
     async def _edit_map_boundaries(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
         raise DomainError(
@@ -717,7 +813,6 @@ class RoborockGateway:
         )
 
     async def _manage_schedule(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
-        props = self._props(resolved)
         action = arguments["action"]
         command = {
             "create": "set_server_timer",
@@ -727,7 +822,10 @@ class RoborockGateway:
             "disable": "upd_server_timer",
         }[action]
         payload = arguments.get("spec") or {"id": arguments.get("schedule"), "enabled": action == "enable"}
-        return {"response": await props.command.send(command, [payload]), "candidate_payload": payload}
+        return {
+            "response": await self._write(resolved, "manage_schedule", command, [payload]),
+            "candidate_payload": payload,
+        }
 
     async def _reset_consumable(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
         from roborock.devices.traits.v1.consumeable import ConsumableAttribute
@@ -737,11 +835,11 @@ class RoborockGateway:
             attribute = ConsumableAttribute(arguments["consumable"])
         except ValueError as exc:
             raise DomainError(ErrorCode.INVALID_ARGUMENT, "Unknown consumable key.") from exc
-        await props.consumables.reset_consumable(attribute)
+        await self._write(resolved, "reset_consumable", "reset_consumable", [attribute.value])
+        await props.consumables.refresh()
         return {"consumable": attribute.value, "live_verification_exempt": True}
 
     async def _set_device_settings(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
-        props = self._props(resolved)
         command_map: dict[str, tuple[str, Callable[[Any], Any]]] = {
             "led": ("set_led_status", lambda value: [int(value)]),
             "child_lock": ("set_child_lock_status", lambda value: {"lock_status": int(value)}),
@@ -775,7 +873,7 @@ class RoborockGateway:
             else:
                 command, serializer = command_map[key]
                 params = serializer(value)
-            responses[key] = await props.command.send(command, params)
+            responses[key] = await self._write(resolved, "set_device_settings", command, params)
         return {"responses": responses}
 
     async def _telepresence(self, resolved: ResolvedDevice, arguments: dict[str, Any]) -> Any:
@@ -788,8 +886,9 @@ class RoborockGateway:
         if action == "close":
             return {"closed": await self.media.close_session(arguments["session"])}
         if action == "set_volume":
-            props = self._props(resolved)
-            response = await props.command.send("set_voice_chat_volume", [arguments["volume"]])
+            response = await self._write(
+                resolved, "telepresence", "set_voice_chat_volume", [arguments["volume"]]
+            )
             return {
                 "session": arguments["session"],
                 "volume": arguments["volume"],
@@ -889,7 +988,9 @@ def _resolve_named(
 def _reconcile_tool(tool: str) -> str:
     if tool in {"manage_map", "edit_rooms", "edit_map_boundaries"}:
         return "get_map"
-    if tool in {"set_cleaning_settings", "set_device_settings"}:
+    if tool == "set_cleaning_settings":
+        return "get_cleaning_settings"
+    if tool == "set_device_settings":
         return "get_device_settings"
     if tool in {"dock_action", "set_dock_settings"}:
         return "get_dock_status"

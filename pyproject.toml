@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "roborockmcp"
-version = "0.1.0.dev0"
-description = "A private, Codex-first MCP server for Roborock vacuums."
+version = "0.1.0"
+description = "A Codex-first MCP server with supervised stationary Roborock map repair."
 readme = "README.md"
 requires-python = ">=3.11,<3.15"
 license = "Apache-2.0"

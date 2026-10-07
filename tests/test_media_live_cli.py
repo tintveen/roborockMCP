@@ -22,7 +22,7 @@ def test_cli_version_and_live_guard() -> None:
     runner = CliRunner()
     version = runner.invoke(app, ["--version"])
     assert version.exit_code == 0
-    assert "0.1.0.dev0" in version.stdout
+    assert version.stdout.strip() == "0.1.0"
     blocked = runner.invoke(app, ["live-test", "run"])
     assert blocked.exit_code == 2
     assert "Refusing" in blocked.output

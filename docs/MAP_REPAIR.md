@@ -1,13 +1,18 @@
 # Stationary room-map repair
 
-Status: implemented and tested offline. Supervised discovery, status, room
-membership and native map reads worked on S8 MaxV Ultra firmware 02.39.60.
-One explicitly approved stationary room split was acknowledged and persisted
-across two independent map reads. Only room membership changed; occupancy and
-restrictions stayed unchanged. Merges, restoration, official-app room-selection
-acceptance and complete repair remain unverified.
-Public release follows successful supervised acceptance. The tool surface
-remains exactly 25 semantic tools.
+Status: supervised split/merge repair accepted in the official app on S8 MaxV
+Ultra firmware 02.39.60. A sequence of 26 individually dispatched split/merge
+operations was acknowledged and reconciled after each edit. Independent native
+map reads and the public MCP image/geometry result agreed. The human confirmed
+the final room boundaries and created a native backup through the app.
+Existing cloud room names were restored with one full-table association write
+and independently read back; the human confirmed the names in the app. Its
+acknowledgement was unfamiliar, so the write was not repeated and the sequence
+stopped for reconciliation and renewed human confirmation. The approved room
+order was then acknowledged and read back exactly. Occupancy, restrictions and
+inspected routine definitions were unchanged. No movement, cleaning, remapping
+or backup restoration was tested.
+The tool surface remains exactly 25 semantic tools.
 
 ## What the feature does
 
@@ -46,14 +51,23 @@ it, then set `dry_run=false` to dispatch that one operation. Refresh afterwards
 and resolve any newly assigned room IDs before constructing another operation.
 Names and room keys from a different device or map cannot identify a room.
 
-The observed split differed slightly from the mathematical half-plane preview.
-The firmware assigned a new room ID and a default name to one part, and removed
-the affected room from the custom cleaning sequence without adding its new ID.
+Observed splits differed slightly from the mathematical half-plane preview.
+The firmware assigned new room IDs, removed room-name bindings, and cleared
+affected entries from the custom cleaning sequence without adding their new IDs.
 Do not equate acknowledgement with exact preview acceptance. Capture the full
 routine definitions and cleaning sequence before editing; compare afterwards and
 present any required name or reference repairs. Restore unsupported settings in
-the official app. This single result does not establish merge compatibility or
-cleaning performance, and no movement was used for this verification.
+the official app. The completed repair establishes split/merge compatibility
+for the recorded firmware and supervised case; it does not establish cleaning
+performance. No movement was used for this verification.
+
+Firmware retained some existing disconnected floor fragments with their old
+room assignment. Where a reviewed target required changing these, the sequence
+temporarily merged the affected adjacent rooms, then split the union along the
+approved boundaries. Each intermediate result was inspected and room identifiers
+were resolved again. Cells centred exactly on a division line can be assigned to
+the opposite side from the mathematical preview at the native 50 mm resolution.
+Inspect actual membership rather than treating a prediction as firmware output.
 
 Split/merge operations change room membership, not observed wall geometry.
 Incorrect walls do not by themselves rule out a useful room-assignment correction:
@@ -83,11 +97,25 @@ inspect those reads instead of resending. Save and name the new map through the
 official app where the adapter lacks verified semantics, confirm the original
 map remains recoverable, and inspect all room selections against the floor plan.
 
-Room renaming through the previous guessed `name_segment` payload is disabled.
-The command associates cloud room identifiers on some implementations, which is
-not a verified display-name operation for this device. Rename in the official
-app and read back. The earlier unverified `save_map` boundary-write payload is
-also disabled. Repair does not add barriers to hide segmentation errors.
+Arbitrary room renaming remains disabled. `edit_rooms(action="restore_names")`
+accepts every current room once and a parallel `names` list. Each name must
+resolve uniquely to an existing cloud room. It never creates rooms or changes
+account-wide names. The observed legacy `name_segment` table uses `miRoomId`
+for that existing cloud identifier and `robotRoomId` for the native segment.
+It resets room-type tags to **0**: the preview states this and application
+requires `reset_room_types=true`. This does not establish SmartPlan room-type
+classification. Ambiguous or absent cloud names fail before dispatch.
+
+`edit_rooms(action="set_sequence")` takes every room once in the desired order.
+Preview returns the previous native sequence. Applying requires that exact
+`expected_sequence` as well as the fresh map revision. Read back with
+`get_cleaning_settings`, which includes native order and room cleaning settings.
+Changing order starts no cleaning task. The older unbound cleaning-settings
+sequence path is disabled. Both metadata operations remain available in
+stationary repair mode and use one dispatch with no fallback.
+
+The earlier unverified `save_map` boundary-write payload is disabled. Repair
+does not add barriers to hide segmentation errors.
 
 ## Start only after explicit HITL authorization
 
@@ -173,6 +201,13 @@ a later, separately authorized cleaning test.
 - Mapping-only start: [Valetudo mapping capability at immutable revision](https://github.com/Hypfer/Valetudo/blob/31bbc50c8dc34d02d4ed1a24d2febe0444344c64/backend/lib/robots/roborock/capabilities/RoborockMappingPassCapability.js)
   sends `app_start_build_map` with empty parameters. This is source evidence,
   not proof of map retention or acceptance on a97 firmware.
+- Existing-name association: [Valetudo segment naming source](https://github.com/Hypfer/Valetudo/blob/31bbc50c8dc34d02d4ed1a24d2febe0444344c64/backend/lib/robots/roborock/capabilities/RoborockMapSegmentRenameCapability.js).
+  A complete legacy table with existing cloud identifiers was reconciled on the
+  recorded firmware. The adapter still treats an unfamiliar acknowledgement as
+  uncertain, even if later reads demonstrate the intended effect.
+- Native order payload: [Vacuum Agent's V1 order adapter](https://github.com/kingchddg901/Vacuum_Agent/blob/0cc1c1a73a9854bbc61762eb997020ffda958a07/custom_components/eufy_vacuum/adapters/roborock/adapter.py).
+  The flat segment-ID list was subsequently acknowledged and read back on the
+  recorded a97 firmware without motion.
 - [Official room merge/divide guidance](https://support.roborock.com/hc/en-us/articles/360030486432-How-do-I-merge-or-divide-rooms-on-the-map).
 
 Run Ruff, mypy, fake-only pytest, the package build, and CI before handoff.

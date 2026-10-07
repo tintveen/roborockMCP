@@ -370,16 +370,23 @@ def build_server(
     @mcp.tool(annotations=_annotations(read_only=False, destructive=True), structured_output=True)
     async def edit_rooms(
         ctx: Context[AppContext],
-        action: Literal["rename", "split", "merge"],
-        rooms: Annotated[list[str], Field(min_length=1, max_length=2)],
+        action: Literal["rename", "split", "merge", "restore_names", "set_sequence"],
+        rooms: Annotated[list[str], Field(min_length=1, max_length=30)],
         map_revision: str,
         device: str,
         map: str,
         name: Annotated[str | None, Field(max_length=40)] = None,
         split_line: SplitLine | None = None,
         dry_run: bool = True,
+        names: Annotated[list[str] | None, Field(min_length=1, max_length=30)] = None,
+        reset_room_types: bool = False,
+        expected_sequence: Annotated[list[int] | None, Field(max_length=30)] = None,
     ) -> OperationResult:
-        """Preview by default; explicitly apply one reviewed split/merge. Rename needs the official app."""
+        """Preview a split/merge, restore existing cloud names, or set room order.
+
+        Name restoration resets room types to 0 and requires explicit consent;
+        arbitrary rename is unsupported.
+        """
         if action in {"rename", "split"} and len(rooms) != 1:
             raise ToolError(f"{action} requires exactly one room")
         if action == "merge" and len(rooms) != 2:
@@ -388,6 +395,10 @@ def build_server(
             raise ToolError("rename requires a name")
         if action == "split" and split_line is None:
             raise ToolError("split requires a split_line")
+        if action == "restore_names" and (
+            names is None or len(names) != len(rooms) or any(not n.strip() or len(n) > 40 for n in names)
+        ):
+            raise ToolError("restore_names requires one non-empty name (up to 40 characters) per room")
         return await _invoke(
             ctx,
             "edit_rooms",
@@ -400,6 +411,9 @@ def build_server(
                 "name": name,
                 "split_line": _dump(split_line),
                 "dry_run": dry_run,
+                "names": names,
+                "reset_room_types": reset_room_types,
+                "expected_sequence": expected_sequence,
             },
         )
 

@@ -33,13 +33,35 @@ async def send_map_write_once(
     map_id: str,
     active_map_after_dispatch: bool = False,
 ) -> Any:
-    channel = props.maps.rpc_channel
+    arguments: dict[str, Any] = {"device": device, "format": "all"}
+    if not active_map_after_dispatch:
+        arguments["map"] = map_id
+    try:
+        await send_rpc_write_once(
+            props.maps.rpc_channel, command, params, reconcile_tool="get_map", arguments=arguments
+        )
+    except DomainError as error:
+        if active_map_after_dispatch and error.code == ErrorCode.OUTCOME_UNCERTAIN:
+            error.reconcile_with.insert(0, {"tool": "get_status", "arguments": {"device": device}})
+        raise
+    return {"acknowledged": True, "read_back_required": True}
+
+
+async def send_rpc_write_once(
+    channel: Any,
+    command: str,
+    params: Any,
+    *,
+    reconcile_tool: str,
+    arguments: dict[str, Any],
+) -> Any:
+    """Dispatch one RPC write; never enter the upstream transport fallback loop."""
     if version("python-roborock") != "7.1.1" or not isinstance(channel, RpcChannel):
         raise DomainError(ErrorCode.UNSUPPORTED_CAPABILITY, "Single-dispatch adapter is unavailable.")
     # This private integration is deliberately pinned and covered by contract tests.
     strategies = channel._rpc_strategies_cb()
     if not strategies:
-        raise DomainError(ErrorCode.DEVICE_OFFLINE, "No map-write transport is available.")
+        raise DomainError(ErrorCode.DEVICE_OFFLINE, "No write transport is available.")
     strategy = strategies[0]
     request = RequestMessage(command, params=params)
     try:
@@ -47,15 +69,9 @@ async def send_map_write_once(
         if response not in ("ok", ["ok"]):
             raise ValueError("Unexpected acknowledgement")
     except (Exception, asyncio.CancelledError) as exc:
-        arguments: dict[str, Any] = {"device": device, "format": "all"}
-        if not active_map_after_dispatch:
-            arguments["map"] = map_id
-        error = outcome_uncertain(
-            "Map dispatch began; its outcome is uncertain. Do not repeat the write.",
-            "get_map",
+        raise outcome_uncertain(
+            "Dispatch began; its outcome is uncertain. Do not repeat the write.",
+            reconcile_tool,
             arguments,
-        )
-        if active_map_after_dispatch:
-            error.reconcile_with.insert(0, {"tool": "get_status", "arguments": {"device": device}})
-        raise error from exc
-    return {"acknowledged": True, "read_back_required": True}
+        ) from exc
+    return response
