@@ -16,3 +16,10 @@ def test_recursive_redaction() -> None:
         "nested": {"localKey": "[REDACTED]", "ok": 2},
         "blob": "[REDACTED BYTES: 3]",
     }
+
+
+def test_short_secrets_do_not_hide_map_restrictions_or_stationary_status() -> None:
+    public = {"no_mopping_areas": [[1, 2, 3, 4]], "inReturning": 0, "device": "opaque"}
+    assert redact(public) == public
+    for key in ("pin", "cameraPIN", "camera_pin", "turnServer", "iceCandidates", "SDP", "remoteIce"):
+        assert redact({key: "sensitive"}) == {key: "[REDACTED]"}

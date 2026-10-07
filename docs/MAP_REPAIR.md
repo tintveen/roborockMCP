@@ -1,8 +1,10 @@
 # Stationary room-map repair
 
-Status: implemented and tested offline. No S8 MaxV Ultra firmware has been
-validated with this workflow yet. Public release follows successful supervised
-acceptance. The tool surface remains exactly 25 semantic tools.
+Status: implemented and tested offline. Supervised read-only discovery, status,
+room membership and native map reads worked on S8 MaxV Ultra firmware 02.39.60.
+Room writes, restoration and complete repair acceptance remain unverified.
+Public release follows successful supervised acceptance. The tool surface
+remains exactly 25 semantic tools.
 
 ## What the feature does
 
@@ -38,6 +40,13 @@ latest map revision. `dry_run` defaults to true. Preview a split or merge, revie
 it, then set `dry_run=false` to dispatch that one operation. Refresh afterwards
 and resolve any newly assigned room IDs before constructing another operation.
 Names and room keys from a different device or map cannot identify a room.
+
+The initial supervised session stopped before any write: the user confirmed
+incorrect wall geometry and no usable native backup. This is a diagnostic stop,
+not successful repair or hardware acceptance. Split previews also require
+connected floor parts; maps with disconnected fragments can produce no candidate.
+Do not weaken that result into an automatic correction or claim reconstructed
+walls. With remapping excluded, this case has no supported repair path.
 
 Room renaming through the previous guessed `name_segment` payload is disabled.
 The command associates cloud room identifiers on some implementations, which is
