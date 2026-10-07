@@ -19,6 +19,7 @@ from roborock_mcp.fake_gateway import FakeGateway
 from roborock_mcp.gateway import WRITE_TOOLS
 from roborock_mcp.map_transport import send_map_write_once
 from roborock_mcp.maps import (
+    Grid,
     merge_preview,
     parse_grid,
     repair_preview,
@@ -264,6 +265,40 @@ def test_split_prediction_uses_membership_and_rejects_outside_or_short_cuts() ->
         )
         with pytest.raises(DomainError):
             split_preview(snapshot, 16, line)
+
+
+def test_split_preserves_existing_islands_without_inventing_connectivity() -> None:
+    snapshot = snapshot_from_props(fixture_props(), "device_synthetic", "0")
+    cells = tuple(
+        16 if (2 <= x <= 4 and 2 <= y <= 9) or (8 <= x <= 9 and 3 <= y <= 4) else 0
+        for y in range(12)
+        for x in range(12)
+    )
+    snapshot.grid = Grid(12, 12, 20_000, 20_000, cells)
+    line = SplitLine.model_validate(
+        {"start": {"x_mm": 20_325, "y_mm": 20_000}, "end": {"x_mm": 20_325, "y_mm": 20_600}}
+    )
+    result = split_preview(snapshot, 16, line)
+    assert result["connectivity"]["original_component_count"] == 2
+    assert result["connectivity"]["part_component_counts"] == [1, 1]
+    assert result["connectivity"]["existing_fragments_require_review"] is True
+    assert sum(result["part_cell_counts"]) == cells.count(16)
+
+
+def test_split_still_rejects_new_fragmentation_inside_one_component() -> None:
+    snapshot = snapshot_from_props(fixture_props(), "device_synthetic", "0")
+    # A U-shaped floor is connected below the cut; its upper part would become two islands.
+    cells = tuple(
+        16 if (2 <= x <= 8 and y == 2) or (x in (2, 8) and 2 <= y <= 9) else 0
+        for y in range(12)
+        for x in range(12)
+    )
+    snapshot.grid = Grid(12, 12, 20_000, 20_000, cells)
+    line = SplitLine.model_validate(
+        {"start": {"x_mm": 20_000, "y_mm": 20_275}, "end": {"x_mm": 20_600, "y_mm": 20_275}}
+    )
+    with pytest.raises(DomainError, match="fragmenting"):
+        split_preview(snapshot, 16, line)
 
 
 def test_room_keys_are_scoped_and_names_must_be_unique() -> None:

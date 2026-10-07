@@ -29,7 +29,9 @@ position, route, map sequence counters, and rendered pixels are excluded.
 
 Candidate generation extends long observed wall axes and looks for small room
 protrusions toward an adjacent room predominantly on the opposite side. Each
-candidate must divide the selected room into two connected floor regions. All
+candidate must produce two non-empty floor areas without breaking an existing
+floor component into disconnected pieces on the same side. Pre-existing islands
+are retained and their component counts are reported for review. All
 candidates require review: furniture, missing observations and corrupted SLAM
 geometry can look like walls. A single observation does not establish that a
 wall is persistent or that the historical layout has been recovered. Absence of
@@ -41,12 +43,12 @@ it, then set `dry_run=false` to dispatch that one operation. Refresh afterwards
 and resolve any newly assigned room IDs before constructing another operation.
 Names and room keys from a different device or map cannot identify a room.
 
-The initial supervised session stopped before any write: the user confirmed
-incorrect wall geometry and no usable native backup. This is a diagnostic stop,
-not successful repair or hardware acceptance. Split previews also require
-connected floor parts; maps with disconnected fragments can produce no candidate.
-Do not weaken that result into an automatic correction or claim reconstructed
-walls. With remapping excluded, this case has no supported repair path.
+Split/merge operations change room membership, not observed wall geometry.
+Incorrect walls do not by themselves rule out a useful room-assignment correction:
+a human may approve a boundary supported by the native map and a floor-plan
+reference. A preview remains an unapplied proposal until reviewed. Ambiguous
+areas stay unresolved rather than being assigned automatically. If no boundary
+can be supported, stop that proposal; do not infer permission for a mapping run.
 
 ## Separately authorized remapping
 
@@ -104,9 +106,10 @@ task at each edit preflight.
 3. Capture current map/rooms, room cleaning settings, restrictions, and
    schedule/routine room references privately outside Git. Inspect those
    references in the app where an API read is unavailable.
-4. Review actual walls and doorways against the repair preview. If occupancy
-   geometry is distorted, use a verified good native backup or stop. Room
-   splitting cannot repair SLAM wall geometry.
+4. Review actual walls and doorways against the repair preview. Distinguish room
+   membership corrections from occupancy geometry repair. Splitting can improve
+   assignments along a reviewed boundary but cannot rebuild SLAM walls. Prefer a
+   verified good native backup; leave unsupported boundaries unapplied.
 5. Approve an exact single operation, apply once, and fetch the map again.
    Reject stale revisions and replan after every edit. Check room identities
    and settings rather than assuming that segment numbers remain stable.
@@ -154,6 +157,7 @@ a later, separately authorized cleaning test.
   and `_send_rpc` primitive. The adapter fails closed on another library version.
 - Historical split/merge payloads: [Valetudo source at immutable revision](https://github.com/rand256/valetudo/blob/ab9fe2fb379f7f10d9a1556739b4fcc78cbfe03b/lib/miio/Vacuum.js).
   This establishes candidate protocol syntax, not a97 firmware compatibility.
+  The flat native-coordinate payload is also used by [Valetudo's segment edit capability](https://github.com/Hypfer/Valetudo/blob/31bbc50c8dc34d02d4ed1a24d2febe0444344c64/backend/lib/robots/roborock/capabilities/RoborockMapSegmentEditCapability.js).
 - Mapping-only start: [Valetudo mapping capability at immutable revision](https://github.com/Hypfer/Valetudo/blob/31bbc50c8dc34d02d4ed1a24d2febe0444344c64/backend/lib/robots/roborock/capabilities/RoborockMappingPassCapability.js)
   sends `app_start_build_map` with empty parameters. This is source evidence,
   not proof of map retention or acceptance on a97 firmware.

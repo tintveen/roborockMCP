@@ -225,20 +225,27 @@ def resolve_snapshot_rooms(snapshot: MapSnapshot, references: list[str]) -> list
     return resolved
 
 
-def _connected(grid: Grid, indices: list[int]) -> bool:
+def _components(grid: Grid, indices: list[int]) -> list[set[int]]:
     pending = set(indices)
-    if not pending:
-        return False
-    queue = [pending.pop()]
-    while queue:
-        index = queue.pop()
-        x, y = index % grid.width, index // grid.width
-        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
-            neighbor = ny * grid.width + nx
-            if 0 <= nx < grid.width and 0 <= ny < grid.height and neighbor in pending:
-                pending.remove(neighbor)
-                queue.append(neighbor)
-    return not pending
+    components = []
+    while pending:
+        queue = [pending.pop()]
+        component = set(queue)
+        while queue:
+            index = queue.pop()
+            x, y = index % grid.width, index // grid.width
+            for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                neighbor = ny * grid.width + nx
+                if 0 <= nx < grid.width and 0 <= ny < grid.height and neighbor in pending:
+                    pending.remove(neighbor)
+                    component.add(neighbor)
+                    queue.append(neighbor)
+        components.append(component)
+    return components
+
+
+def _connected(grid: Grid, indices: list[int]) -> bool:
+    return len(_components(grid, indices)) == 1
 
 
 def split_preview(snapshot: MapSnapshot, segment: int, line: SplitLine) -> dict[str, Any]:
@@ -254,14 +261,29 @@ def split_preview(snapshot: MapSnapshot, segment: int, line: SplitLine) -> dict[
             raise DomainError(ErrorCode.INVALID_ARGUMENT, "Split endpoints must span the selected room.")
         side = dx * (y - a.y_mm) - dy * (x - a.x_mm)
         parts[int(side >= 0)].append(index)
-    if not all(len(part) >= 4 and _connected(grid, part) for part in parts):
+    original_components = _components(grid, grid.room_cells(segment))
+    part_sets = [set(part) for part in parts]
+    if not all(len(part) >= 4 for part in parts) or any(
+        not _connected(grid, list(intersection))
+        for component in original_components
+        for part in part_sets
+        if (intersection := component & part)
+    ):
         raise DomainError(
-            ErrorCode.INVALID_ARGUMENT, "Split must produce two connected, non-empty floor areas."
+            ErrorCode.INVALID_ARGUMENT,
+            "Split must produce two non-empty floor areas without fragmenting an existing component "
+            "into disconnected pieces on the same side.",
         )
     return {
         "kind": "split_prediction",
         "part_cell_counts": [len(part) for part in parts],
         "part_area_m2": [len(part) * CELL_MM**2 / 1_000_000 for part in parts],
+        "connectivity": {
+            "original_component_count": len(original_components),
+            "part_component_counts": [len(_components(grid, part)) for part in parts],
+            "basis": "Each existing floor component remains connected on each side of the cut.",
+            "existing_fragments_require_review": len(original_components) > 1,
+        },
         "before_svg": grid_svg(grid),
         "after_svg": grid_svg(grid, highlighted=set(parts[1])),
         "warning": "Geometric prediction only; firmware determines new room IDs. Read back after dispatch.",
