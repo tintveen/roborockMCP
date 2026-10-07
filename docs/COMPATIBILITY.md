@@ -12,6 +12,10 @@ new names and adapter backup/restore remain unsupported. Cleaning, mapping,
 navigation, dock actions, camera/audio and other write branches are not hardware
 qualified by this result. No robot movement was used during map acceptance.
 
+Final order saving and the completed-map backup were performed by the human in
+the app. The native sequence write/read-back alone did not establish the app's
+saved state. Independent reads after the app save matched the accepted result.
+
 See [the repair workflow](MAP_REPAIR.md) for observed identifier changes,
 fragment handling, recovery and remaining limits. A runtime response's
 `live_verified_on_a97: false` means that call does not carry a live acceptance

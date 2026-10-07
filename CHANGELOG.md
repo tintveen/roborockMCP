@@ -13,6 +13,8 @@
 - Restore existing cloud names with explicit room-type reset consent, and native
   room order with a fresh revision and expected previous order. Native order was
   acknowledged and read back; unknown naming acknowledgements require reconciliation.
+- Require final app save verification: the human saved the order and backed up
+  the completed map after native order read-back. No automatic app-save claim.
 - Extend the single-dispatch transport to other RPC writes; uncertain operations
   never fall through to another transport or continue a settings batch.
 - No cleaning or movement acceptance. Native backup creation and restore remain

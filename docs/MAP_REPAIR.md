@@ -14,6 +14,12 @@ inspected routine definitions were unchanged. No movement, cleaning, remapping
 or backup restoration was tested.
 The tool surface remains exactly 25 semantic tools.
 
+The human reported that the app still required saving the order, completed that
+save and created a fresh backup of the finished map. Subsequent independent reads
+matched the accepted names, order and geometry. An RPC acknowledgement plus
+`get_clean_sequence` read-back therefore does **not** establish completion of the
+official app's save flow. Final app verification and saving remain required.
+
 ## What the feature does
 
 `get_map` returns a device/map-bound content revision, fresh room membership,
@@ -113,6 +119,8 @@ Preview returns the previous native sequence. Applying requires that exact
 Changing order starts no cleaning task. The older unbound cleaning-settings
 sequence path is disabled. Both metadata operations remain available in
 stationary repair mode and use one dispatch with no fallback.
+After read-back, reopen the official app and confirm/save its order state before
+creating the final native backup. No automatic app-save equivalence is claimed.
 
 The earlier unverified `save_map` boundary-write payload is disabled. Repair
 does not add barriers to hide segmentation errors.
